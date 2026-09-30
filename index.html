@@ -136,6 +136,43 @@
       background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06111d;font-weight:900;
     }
 
+
+    .github-dashboard{display:grid;grid-template-columns:280px 1fr;gap:16px}
+    .repo-list{display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto}
+    .repo-item{
+      border:1px solid var(--line);background:#0c131b;color:var(--text);
+      border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;
+    }
+    .repo-item:hover,.repo-item.active{border-color:var(--accent);background:#101b27}
+    .repo-item .repo-name{font-weight:800}
+    .repo-item .repo-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .tab-btn{
+      border:1px solid var(--line);background:#0c131b;color:var(--muted);
+      padding:8px 11px;border-radius:9px;cursor:pointer;
+    }
+    .tab-btn.active{color:var(--text);border-color:var(--accent);background:#102033}
+    .github-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .mini-card{background:#0c131b;border:1px solid var(--line);border-radius:12px;padding:12px}
+    .mini-card .k{font-size:12px;color:var(--muted)}
+    .mini-card .v{font-size:20px;font-weight:800;margin-top:5px}
+    .list-row{
+      display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
+      padding:11px 0;border-bottom:1px solid var(--line);
+    }
+    .list-row:last-child{border-bottom:none}
+    .empty-state{
+      border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted);
+    }
+    .select-loading{opacity:.7}
+    @media (max-width:1000px){
+      .github-dashboard{grid-template-columns:1fr}
+      .github-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:650px){
+      .github-grid{grid-template-columns:1fr}
+    }
+
     @media (max-width:1100px){
       .stats{grid-template-columns:repeat(2,1fr)}
       .two,.three{grid-template-columns:1fr}
@@ -243,6 +280,62 @@
         <div class="card"><div class="stat-label">PRs Ready</div><div class="stat-value">0</div></div>
       </section>
 
+
+      <section id="githubWorkspace" class="card" style="margin-top:16px">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="section-title">GitHub Workspace</div>
+            <div class="muted">Browse repositories, branches, issues, commits, and pull requests from the connected GitHub account.</div>
+          </div>
+          <button class="btn" onclick="refreshGitHubWorkspace()" id="refreshGithubBtn" disabled>Refresh GitHub</button>
+        </div>
+
+        <div id="githubDisconnectedState" class="empty-state" style="margin-top:14px">
+          Connect GitHub to load your repositories and engineering activity.
+        </div>
+
+        <div id="githubConnectedWorkspace" class="github-dashboard hidden" style="margin-top:14px">
+          <div>
+            <div class="row" style="justify-content:space-between;margin-bottom:10px">
+              <strong>Repositories</strong>
+              <span class="badge" id="repoCountBadge">0</span>
+            </div>
+            <div class="field" style="margin-bottom:10px">
+              <input id="repoSearchInput" placeholder="Search repositories..." oninput="filterGitHubRepos()">
+            </div>
+            <div class="repo-list" id="githubRepoList"></div>
+          </div>
+
+          <div>
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <div style="font-size:22px;font-weight:800" id="selectedRepoTitle">Select a repository</div>
+                <div class="muted" id="selectedRepoDescription">Repository details will appear here.</div>
+              </div>
+              <a id="openRepoLink" class="btn hidden" target="_blank" rel="noopener">Open in GitHub</a>
+            </div>
+
+            <div class="github-grid" style="margin-top:14px">
+              <div class="mini-card"><div class="k">Language</div><div class="v" id="ghStatLanguage">—</div></div>
+              <div class="mini-card"><div class="k">Default Branch</div><div class="v" id="ghStatBranch">—</div></div>
+              <div class="mini-card"><div class="k">Open Issues</div><div class="v" id="ghStatIssues">—</div></div>
+              <div class="mini-card"><div class="k">Visibility</div><div class="v" id="ghStatVisibility">—</div></div>
+            </div>
+
+            <div class="tabs" style="margin-top:16px">
+              <button class="tab-btn active" onclick="showGitHubTab('branches', this)">Branches</button>
+              <button class="tab-btn" onclick="showGitHubTab('issues', this)">Issues</button>
+              <button class="tab-btn" onclick="showGitHubTab('commits', this)">Commits</button>
+              <button class="tab-btn" onclick="showGitHubTab('prs', this)">Pull Requests</button>
+            </div>
+
+            <div id="githubTabContent" class="card" style="box-shadow:none">
+              <div class="muted">Select a repository to load GitHub data.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="settings" class="card" style="margin-top:16px">
         <div class="successbox" style="margin-bottom:14px">
           <strong>Supabase Auth Connected</strong><br>
@@ -268,10 +361,26 @@
         <div class="section-title">Create Investigation</div>
         <div class="form-grid">
           <div class="field"><label>Investigation Title</label><input id="title" value="" placeholder="Enter investigation title"></div>
-          <div class="field"><label>Issue ID</label><input id="issueId" value="" placeholder="e.g. BUG-101"></div>
+          <div class="field"><label>Issue ID</label><input id="issueId" value="" placeholder="e.g. BUG-101 or #123"></div>
+          <div class="field span-2">
+            <label>GitHub Issue (optional)</label>
+            <select id="githubIssuePicker" onchange="fillInvestigationFromGitHubIssue()">
+              <option value="">Select a GitHub issue</option>
+            </select>
+          </div>
           <div class="field span-2"><label>Bug Description</label><textarea id="description" rows="3" placeholder="Describe the bug, symptoms, and expected behavior"></textarea></div>
-          <div class="field"><label>Repository</label><input id="repoName" value="" placeholder="Repository name"></div>
-          <div class="field"><label>Branch</label><input id="branch" value="" placeholder="e.g. main"></div>
+          <div class="field">
+            <label>Repository</label>
+            <select id="repoName" onchange="handleInvestigationRepoChange()">
+              <option value="">Select repository</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Branch</label>
+            <select id="branch">
+              <option value="">Select branch</option>
+            </select>
+          </div>
           <div class="field"><label>Environment</label><select id="environment"><option>Staging</option><option>Development</option><option>Production</option></select></div>
           <div class="field"><label>Priority</label><select id="priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
           <div class="field"><label>Assignee</label><input id="assignee" value=""></div>
@@ -604,6 +713,9 @@
     document.getElementById("connectionBadge").textContent = "● GitHub not connected";
     document.getElementById("connectionBadge").className = "badge";
     document.getElementById("githubInfo").classList.add("hidden");
+    githubRepos = [];
+    selectedGitHubRepo = null;
+    showGitHubDisconnectedUI();
     document.getElementById("appShell").classList.add("hidden");
     document.getElementById("authShell").classList.remove("hidden");
     showLogin();
@@ -616,6 +728,10 @@
   ];
   let workflowStates = workflowSteps.map(()=> "Pending");
   let github = { token:null, owner:null, repo:null, base:"main", head:null, connected:false, defaultBranch:"main" };
+  let githubRepos = [];
+  let selectedGitHubRepo = null;
+  let selectedGitHubRepoData = { branches:[], issues:[], commits:[], prs:[] };
+  let activeGitHubTab = "branches";
   let fixApproved = false;
   let verified = false;
 
@@ -854,6 +970,8 @@
       history.replaceState({}, document.title, window.location.pathname + window.location.hash);
       sessionStorage.removeItem("repopilot_github_oauth_state");
       updatePrEligibility();
+      showGitHubConnectedUI();
+      await refreshGitHubWorkspace();
       closeGitHubModal();
       toast("GitHub OAuth connection completed");
     }catch(err){
@@ -875,6 +993,254 @@
     }
     if(res.status===204)return null;
     return res.json();
+  }
+
+
+  function showGitHubConnectedUI(){
+    document.getElementById("githubDisconnectedState").classList.add("hidden");
+    document.getElementById("githubConnectedWorkspace").classList.remove("hidden");
+    document.getElementById("refreshGithubBtn").disabled = false;
+  }
+
+  function showGitHubDisconnectedUI(){
+    document.getElementById("githubDisconnectedState").classList.remove("hidden");
+    document.getElementById("githubConnectedWorkspace").classList.add("hidden");
+    document.getElementById("refreshGithubBtn").disabled = true;
+  }
+
+  async function refreshGitHubWorkspace(){
+    if(!github.connected || !github.token){
+      toast("Connect GitHub first.");
+      return;
+    }
+    const btn = document.getElementById("refreshGithubBtn");
+    btn.disabled = true;
+    btn.textContent = "Refreshing...";
+    try{
+      const repos = await ghFetch("/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member");
+      githubRepos = repos || [];
+      document.getElementById("repoCountBadge").textContent = githubRepos.length;
+      renderGitHubRepoList(githubRepos);
+      populateInvestigationRepositoryOptions();
+      showGitHubConnectedUI();
+      toast(`Loaded ${githubRepos.length} repositories`);
+    }catch(err){
+      toast("Could not load GitHub repositories");
+      console.error(err);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "Refresh GitHub";
+    }
+  }
+
+  function renderGitHubRepoList(repos){
+    const list = document.getElementById("githubRepoList");
+    if(!repos.length){
+      list.innerHTML = '<div class="empty-state">No repositories are available for this GitHub authorization.</div>';
+      return;
+    }
+    list.innerHTML = repos.map(repo => `
+      <button class="repo-item ${selectedGitHubRepo?.id === repo.id ? "active" : ""}" onclick="selectGitHubRepo(${repo.id})">
+        <div class="repo-name">${escapeHtml(repo.full_name)}</div>
+        <div class="repo-meta">${escapeHtml(repo.language || "Unknown")} · ${repo.private ? "Private" : "Public"} · ${escapeHtml(repo.default_branch || "—")}</div>
+      </button>
+    `).join("");
+  }
+
+  function filterGitHubRepos(){
+    const q = document.getElementById("repoSearchInput").value.trim().toLowerCase();
+    const filtered = githubRepos.filter(r =>
+      r.full_name.toLowerCase().includes(q) ||
+      (r.language || "").toLowerCase().includes(q)
+    );
+    renderGitHubRepoList(filtered);
+  }
+
+  function escapeHtml(value){
+    return String(value ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  async function selectGitHubRepo(repoId){
+    const repo = githubRepos.find(r => r.id === repoId);
+    if(!repo) return;
+
+    selectedGitHubRepo = repo;
+    github.owner = repo.owner.login;
+    github.repo = repo.name;
+    github.base = repo.default_branch || "main";
+    github.defaultBranch = github.base;
+
+    renderGitHubRepoList(
+      githubRepos.filter(r => {
+        const q = document.getElementById("repoSearchInput").value.trim().toLowerCase();
+        return !q || r.full_name.toLowerCase().includes(q) || (r.language || "").toLowerCase().includes(q);
+      })
+    );
+
+    document.getElementById("selectedRepoTitle").textContent = repo.full_name;
+    document.getElementById("selectedRepoDescription").textContent = repo.description || "No repository description.";
+    document.getElementById("ghStatLanguage").textContent = repo.language || "Unknown";
+    document.getElementById("ghStatBranch").textContent = repo.default_branch || "—";
+    document.getElementById("ghStatIssues").textContent = repo.open_issues_count ?? "—";
+    document.getElementById("ghStatVisibility").textContent = repo.private ? "Private" : "Public";
+    const openLink = document.getElementById("openRepoLink");
+    openLink.href = repo.html_url;
+    openLink.classList.remove("hidden");
+
+    document.getElementById("githubTabContent").innerHTML = '<div class="muted">Loading repository data...</div>';
+
+    try{
+      const [branches, issues, commits, prs] = await Promise.all([
+        ghFetch(`/repos/${repo.owner.login}/${repo.name}/branches?per_page=100`),
+        ghFetch(`/repos/${repo.owner.login}/${repo.name}/issues?state=open&per_page=100`),
+        ghFetch(`/repos/${repo.owner.login}/${repo.name}/commits?per_page=30`),
+        ghFetch(`/repos/${repo.owner.login}/${repo.name}/pulls?state=all&per_page=50`)
+      ]);
+
+      selectedGitHubRepoData.branches = branches || [];
+      // GitHub's issues endpoint also returns PRs. Keep only real issues.
+      selectedGitHubRepoData.issues = (issues || []).filter(i => !i.pull_request);
+      selectedGitHubRepoData.commits = commits || [];
+      selectedGitHubRepoData.prs = prs || [];
+
+      populateBranchOptions(selectedGitHubRepoData.branches, repo.default_branch);
+      populateIssuePicker(selectedGitHubRepoData.issues);
+      renderGitHubTab();
+    }catch(err){
+      document.getElementById("githubTabContent").innerHTML =
+        `<div class="warning">Could not load repository details: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function showGitHubTab(tab, btn){
+    activeGitHubTab = tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    if(btn) btn.classList.add("active");
+    renderGitHubTab();
+  }
+
+  function renderGitHubTab(){
+    const box = document.getElementById("githubTabContent");
+    if(!selectedGitHubRepo){
+      box.innerHTML = '<div class="muted">Select a repository to load GitHub data.</div>';
+      return;
+    }
+
+    if(activeGitHubTab === "branches"){
+      const rows = selectedGitHubRepoData.branches;
+      box.innerHTML = rows.length ? rows.map(b => `
+        <div class="list-row">
+          <div><strong>${escapeHtml(b.name)}</strong>${b.protected ? ' <span class="badge">Protected</span>' : ''}</div>
+          <span class="muted">${escapeHtml((b.commit?.sha || "").slice(0,7))}</span>
+        </div>
+      `).join("") : '<div class="empty-state">No branches found.</div>';
+      return;
+    }
+
+    if(activeGitHubTab === "issues"){
+      const rows = selectedGitHubRepoData.issues;
+      box.innerHTML = rows.length ? rows.map(i => `
+        <div class="list-row">
+          <div>
+            <strong>#${i.number} ${escapeHtml(i.title)}</strong>
+            <div class="muted">${escapeHtml(i.user?.login || "")} · ${new Date(i.created_at).toLocaleDateString()}</div>
+          </div>
+          <button class="btn" onclick="useGitHubIssue(${i.number})">Use in Investigation</button>
+        </div>
+      `).join("") : '<div class="empty-state">No open issues.</div>';
+      return;
+    }
+
+    if(activeGitHubTab === "commits"){
+      const rows = selectedGitHubRepoData.commits;
+      box.innerHTML = rows.length ? rows.map(c => `
+        <div class="list-row">
+          <div>
+            <strong>${escapeHtml((c.commit?.message || "").split("\\n")[0])}</strong>
+            <div class="muted">${escapeHtml(c.commit?.author?.name || c.author?.login || "Unknown")} · ${new Date(c.commit?.author?.date || c.commit?.committer?.date).toLocaleString()}</div>
+          </div>
+          <a class="btn" href="${c.html_url}" target="_blank" rel="noopener">${escapeHtml(c.sha.slice(0,7))}</a>
+        </div>
+      `).join("") : '<div class="empty-state">No commits found.</div>';
+      return;
+    }
+
+    const rows = selectedGitHubRepoData.prs;
+    box.innerHTML = rows.length ? rows.map(pr => `
+      <div class="list-row">
+        <div>
+          <strong>#${pr.number} ${escapeHtml(pr.title)}</strong>
+          <div class="muted">${escapeHtml(pr.user?.login || "")} · ${escapeHtml(pr.head?.ref || "")} → ${escapeHtml(pr.base?.ref || "")}</div>
+        </div>
+        <div class="row">
+          <span class="badge ${pr.state === "open" ? "success" : ""}">${escapeHtml(pr.state)}</span>
+          <a class="btn" href="${pr.html_url}" target="_blank" rel="noopener">Open</a>
+        </div>
+      </div>
+    `).join("") : '<div class="empty-state">No pull requests found.</div>';
+  }
+
+  function populateInvestigationRepositoryOptions(){
+    const select = document.getElementById("repoName");
+    const current = select.value;
+    select.innerHTML = '<option value="">Select repository</option>' +
+      githubRepos.map(r => `<option value="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</option>`).join("");
+    if(githubRepos.some(r => r.full_name === current)) select.value = current;
+  }
+
+  async function handleInvestigationRepoChange(){
+    const fullName = document.getElementById("repoName").value;
+    const repo = githubRepos.find(r => r.full_name === fullName);
+    if(!repo){
+      document.getElementById("branch").innerHTML = '<option value="">Select branch</option>';
+      document.getElementById("githubIssuePicker").innerHTML = '<option value="">Select a GitHub issue</option>';
+      syncDetail();
+      return;
+    }
+    await selectGitHubRepo(repo.id);
+    syncDetail();
+  }
+
+  function populateBranchOptions(branches, preferred){
+    const select = document.getElementById("branch");
+    select.innerHTML = '<option value="">Select branch</option>' +
+      branches.map(b => `<option value="${escapeHtml(b.name)}">${escapeHtml(b.name)}</option>`).join("");
+    if(branches.some(b => b.name === preferred)) select.value = preferred;
+    syncDetail();
+  }
+
+  function populateIssuePicker(issues){
+    const select = document.getElementById("githubIssuePicker");
+    select.innerHTML = '<option value="">Select a GitHub issue</option>' +
+      issues.map(i => `<option value="${i.number}">#${i.number} ${escapeHtml(i.title)}</option>`).join("");
+  }
+
+  function fillInvestigationFromGitHubIssue(){
+    const number = Number(document.getElementById("githubIssuePicker").value);
+    if(!number) return;
+    useGitHubIssue(number);
+  }
+
+  function useGitHubIssue(number){
+    const issue = selectedGitHubRepoData.issues.find(i => i.number === number);
+    if(!issue) return;
+
+    document.getElementById("githubIssuePicker").value = String(number);
+    document.getElementById("issueId").value = "#" + issue.number;
+    document.getElementById("title").value = issue.title || "";
+    document.getElementById("description").value = issue.body || "No issue description provided.";
+    if(selectedGitHubRepo){
+      document.getElementById("repoName").value = selectedGitHubRepo.full_name;
+      document.getElementById("branch").value = selectedGitHubRepo.default_branch || "";
+    }
+    syncDetail();
+    document.getElementById("investigation").scrollIntoView({behavior:"smooth"});
+    toast(`Loaded GitHub issue #${issue.number} into investigation`);
   }
 
   async function connectGitHub(){
@@ -902,6 +1268,8 @@
       document.getElementById("lastCommit").textContent="Loaded from GitHub";
       status.textContent="Connected ✓";
       updatePrEligibility();
+      showGitHubConnectedUI();
+      await refreshGitHubWorkspace();
       setTimeout(closeGitHubModal,600);
       toast("GitHub connected successfully");
     }catch(err){
@@ -992,6 +1360,8 @@ Human approval: Yes`;
       await enterApp();
     });
   })();
+
+  showGitHubDisconnectedUI();
 
   // GitHub OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
   finishGitHubOAuthIfPresent();
