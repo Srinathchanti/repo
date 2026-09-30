@@ -249,7 +249,7 @@
         <div class="muted" style="font-size:12px">AI-assisted debugging with human approval</div>
       </div>
       <div class="topbar-actions">
-        <button class="btn primary" onclick="openGitHubModal()">Connect GitHub</button>
+        <button class="btn primary" id="topGithubButton" onclick="handleGithubButton()">Connect GitHub</button>
         <div class="user-menu">
           <div class="avatar" id="userAvatar">U</div>
           <div style="line-height:1.2">
@@ -710,6 +710,7 @@
 
     github.token = null;
     github.connected = false;
+    updateGithubConnectionControls();
     document.getElementById("connectionBadge").textContent = "● GitHub not connected";
     document.getElementById("connectionBadge").className = "badge";
     document.getElementById("githubInfo").classList.add("hidden");
@@ -959,6 +960,7 @@
       const user = await ghFetch("/user");
       github.connected = true;
       github.owner = user.login;
+      updateGithubConnectionControls();
 
       document.getElementById("connectionBadge").textContent="● GitHub connected";
       document.getElementById("connectionBadge").className="badge success";
@@ -996,13 +998,50 @@
   }
 
 
+  function updateGithubConnectionControls(){
+    const topBtn = document.getElementById("topGithubButton");
+    const settingsBtn = document.getElementById("settingsGithubButton");
+
+    if(github.connected){
+      if(topBtn){
+        topBtn.textContent = "GitHub Connected ✓";
+        topBtn.classList.remove("primary");
+        topBtn.classList.add("success");
+      }
+      if(settingsBtn){
+        settingsBtn.textContent = "Manage GitHub";
+        settingsBtn.classList.remove("primary");
+      }
+    } else {
+      if(topBtn){
+        topBtn.textContent = "Connect GitHub";
+        topBtn.classList.remove("success");
+        topBtn.classList.add("primary");
+      }
+      if(settingsBtn){
+        settingsBtn.textContent = "Connect";
+        settingsBtn.classList.add("primary");
+      }
+    }
+  }
+
+  function handleGithubButton(){
+    if(github.connected){
+      document.getElementById("githubWorkspace").scrollIntoView({behavior:"smooth"});
+      return;
+    }
+    openGitHubModal();
+  }
+
   function showGitHubConnectedUI(){
+    updateGithubConnectionControls();
     document.getElementById("githubDisconnectedState").classList.add("hidden");
     document.getElementById("githubConnectedWorkspace").classList.remove("hidden");
     document.getElementById("refreshGithubBtn").disabled = false;
   }
 
   function showGitHubDisconnectedUI(){
+    updateGithubConnectionControls();
     document.getElementById("githubDisconnectedState").classList.remove("hidden");
     document.getElementById("githubConnectedWorkspace").classList.add("hidden");
     document.getElementById("refreshGithubBtn").disabled = true;
@@ -1259,6 +1298,7 @@
       const repo=await ghFetch(`/repos/${github.owner}/${github.repo}`);
       github.connected=true;
       github.defaultBranch=repo.default_branch;
+      updateGithubConnectionControls();
       document.getElementById("connectionBadge").textContent="● GitHub connected";
       document.getElementById("connectionBadge").className="badge success";
       document.getElementById("githubInfo").classList.remove("hidden");
@@ -1361,6 +1401,7 @@ Human approval: Yes`;
     });
   })();
 
+  updateGithubConnectionControls();
   showGitHubDisconnectedUI();
 
   // GitHub OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
