@@ -153,6 +153,7 @@
       .workflow{grid-template-columns:1fr}
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="authShell" class="auth-shell">
@@ -182,7 +183,7 @@
 
     <div id="authMessage" class="warning hidden" style="margin-top:14px"></div>
     <div class="auth-note">
-      This single-file build stores account data in this browser only. For production, replace this with backend authentication or a managed auth provider.
+      Authentication is connected to Supabase. Accounts and sessions are handled by Supabase Auth.
     </div>
   </div>
 </div>
@@ -236,13 +237,17 @@
       </section>
 
       <section class="grid stats">
-        <div class="card"><div class="stat-label">Active Investigations</div><div class="stat-value">6</div></div>
-        <div class="card"><div class="stat-label">Bugs Verified</div><div class="stat-value">18</div></div>
-        <div class="card"><div class="stat-label">Tests Passed</div><div class="stat-value">342</div></div>
-        <div class="card"><div class="stat-label">PRs Ready</div><div class="stat-value">4</div></div>
+        <div class="card"><div class="stat-label">Active Investigations</div><div class="stat-value">0</div></div>
+        <div class="card"><div class="stat-label">Bugs Verified</div><div class="stat-value">0</div></div>
+        <div class="card"><div class="stat-label">Tests Passed</div><div class="stat-value">0</div></div>
+        <div class="card"><div class="stat-label">PRs Ready</div><div class="stat-value">0</div></div>
       </section>
 
       <section id="settings" class="card" style="margin-top:16px">
+        <div class="successbox" style="margin-bottom:14px">
+          <strong>Supabase Auth Connected</strong><br>
+          Project: ttwwzlljaxiflpjvdpez.supabase.co
+        </div>
         <div class="github-box">
           <div>
             <div class="section-title">GitHub Integration</div>
@@ -262,15 +267,15 @@
       <section id="investigation" class="card" style="margin-top:16px">
         <div class="section-title">Create Investigation</div>
         <div class="form-grid">
-          <div class="field"><label>Investigation Title</label><input id="title" value="Lowercase coupon codes rejected"></div>
-          <div class="field"><label>Issue ID</label><input id="issueId" value="BUG-101"></div>
-          <div class="field span-2"><label>Bug Description</label><textarea id="description" rows="3">Coupon codes work when entered in uppercase but fail when entered in lowercase.</textarea></div>
-          <div class="field"><label>Repository</label><input id="repoName" value="shop-api"></div>
-          <div class="field"><label>Branch</label><input id="branch" value="main"></div>
+          <div class="field"><label>Investigation Title</label><input id="title" value="" placeholder="Enter investigation title"></div>
+          <div class="field"><label>Issue ID</label><input id="issueId" value="" placeholder="e.g. BUG-101"></div>
+          <div class="field span-2"><label>Bug Description</label><textarea id="description" rows="3" placeholder="Describe the bug, symptoms, and expected behavior"></textarea></div>
+          <div class="field"><label>Repository</label><input id="repoName" value="" placeholder="Repository name"></div>
+          <div class="field"><label>Branch</label><input id="branch" value="" placeholder="e.g. main"></div>
           <div class="field"><label>Environment</label><select id="environment"><option>Staging</option><option>Development</option><option>Production</option></select></div>
           <div class="field"><label>Priority</label><select id="priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
           <div class="field"><label>Assignee</label><input id="assignee" value=""></div>
-          <div class="field"><label>Tags</label><input id="tags" value="api, coupon, regression"></div>
+          <div class="field"><label>Tags</label><input id="tags" value="" placeholder="e.g. api, regression"></div>
         </div>
         <div class="row" style="margin-top:14px">
           <button class="btn primary" onclick="startInvestigation()">Start Investigation</button>
@@ -281,13 +286,13 @@
       <section class="card" style="margin-top:16px">
         <div class="row" style="justify-content:space-between">
           <div>
-            <div class="muted" style="font-size:12px" id="detailIssue">BUG-101</div>
-            <div style="font-size:24px;font-weight:800" id="detailTitle">Lowercase coupon codes rejected</div>
+            <div class="muted" style="font-size:12px" id="detailIssue">No issue selected</div>
+            <div style="font-size:24px;font-weight:800" id="detailTitle">Create an investigation to get started</div>
             <div class="row" style="margin-top:8px">
-              <span class="badge" id="detailRepo">shop-api</span>
-              <span class="badge" id="detailBranch">main</span>
-              <span class="badge success" id="detailStatus">Verified</span>
-              <span class="badge warn" id="detailPriority">High</span>
+              <span class="badge" id="detailRepo">No repository</span>
+              <span class="badge" id="detailBranch">No branch</span>
+              <span class="badge" id="detailStatus">Not started</span>
+              <span class="badge" id="detailPriority">No priority</span>
             </div>
           </div>
         </div>
@@ -300,27 +305,19 @@
         <div class="card">
           <div class="section-title">Repository Analysis</div>
           <table class="table">
-            <tr><th>Name</th><td id="repoMetaName">shop-api</td></tr>
-            <tr><th>Language</th><td id="repoLanguage">Python</td></tr>
-            <tr><th>Branch</th><td id="repoBranch">main</td></tr>
-            <tr><th>File Count</th><td>148</td></tr>
-            <tr><th>Relevant Files</th><td>4</td></tr>
-            <tr><th>Last Commit</th><td id="lastCommit">2 hours ago</td></tr>
-            <tr><th>Health</th><td><span class="badge success">Healthy</span></td></tr>
+            <tr><th>Name</th><td id="repoMetaName">—</td></tr>
+            <tr><th>Language</th><td id="repoLanguage">—</td></tr>
+            <tr><th>Branch</th><td id="repoBranch">—</td></tr>
+            <tr><th>File Count</th><td id="fileCount">—</td></tr>
+            <tr><th>Relevant Files</th><td id="relevantCount">—</td></tr>
+            <tr><th>Last Commit</th><td id="lastCommit">—</td></tr>
+            <tr><th>Health</th><td><span class="badge">Not analyzed</span></td></tr>
           </table>
         </div>
         <div class="card">
           <div class="section-title">Relevant File Tree</div>
-          <div class="tree">
-app/<br>
-&nbsp;&nbsp;routes/<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon.py</span><br>
-&nbsp;&nbsp;services/<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon_service.py</span><br>
-&nbsp;&nbsp;models/<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon.py</span><br>
-tests/<br>
-&nbsp;&nbsp;<span class="hot">test_coupon.py</span>
+          <div class="tree" id="fileTree">
+            <span class="muted">Relevant files will appear here after repository analysis.</span>
           </div>
         </div>
       </section>
@@ -328,25 +325,11 @@ tests/<br>
       <section class="grid two" style="margin-top:16px">
         <div class="card">
           <div class="section-title">AI Investigation</div>
-          <p><strong>Affected component:</strong> coupon_service.py</p>
-          <p class="muted">Coupon validation appears to be implemented in this service.</p>
-          <p><strong>Likely reproduction:</strong> POST /apply-coupon with <code>"save10"</code></p>
-          <div class="row">
-            <span class="badge">Expected: HTTP 200</span>
-            <span class="badge danger">Observed: HTTP 400</span>
-          </div>
-          <p class="muted" style="font-size:12px">Only concise engineering conclusions and evidence are shown. Hidden reasoning is not exposed.</p>
+          <div class="muted" id="aiInvestigationEmpty">Start an investigation to see AI findings, affected components, and supporting evidence.</div>
         </div>
         <div class="card">
           <div class="section-title">Root Cause</div>
-          <p><strong>File:</strong> app/services/coupon_service.py</p>
-          <p><strong>Issue:</strong> Coupon validation performs a case-sensitive comparison.</p>
-          <p><strong>Evidence:</strong> “SAVE10” succeeds; “save10” fails.</p>
-          <p><strong>Recommended fix:</strong> Normalize input before validation.</p>
-          <div class="row">
-            <span class="badge success">Evidence strength: High</span>
-            <span class="badge">Confidence: 92%</span>
-          </div>
+          <div class="muted" id="rootCauseEmpty">Root-cause analysis will appear here after the bug is reproduced.</div>
         </div>
       </section>
 
@@ -355,14 +338,14 @@ tests/<br>
         <div class="grid two">
           <div>
             <table class="table">
-              <tr><th>Command</th><td>pytest tests/test_coupon.py -k lowercase</td></tr>
-              <tr><th>Request</th><td>POST /apply-coupon {"coupon":"save10"}</td></tr>
-              <tr><th>Expected</th><td>HTTP 200</td></tr>
-              <tr><th>Actual</th><td>HTTP 400</td></tr>
+              <tr><th>Command</th><td id="reproCommand">—</td></tr>
+              <tr><th>Request</th><td id="reproRequest">—</td></tr>
+              <tr><th>Expected</th><td id="reproExpected">—</td></tr>
+              <tr><th>Actual</th><td id="reproActual">—</td></tr>
               <tr><th>Timestamp</th><td id="reproTime">—</td></tr>
             </table>
           </div>
-          <div class="terminal" id="terminal">$ waiting for investigation...
+          <div class="terminal" id="terminal">No reproduction has been run yet.
           </div>
         </div>
       </section>
@@ -370,27 +353,18 @@ tests/<br>
       <section class="grid two" style="margin-top:16px">
         <div class="card">
           <div class="section-title">Fix Generation</div>
-          <div class="diff">
-            <div>def validate_coupon(coupon):</div>
-            <div class="minus">-    if coupon not in VALID_COUPONS:</div>
-            <div class="plus">+    coupon = coupon.upper()</div>
-            <div class="plus">+    if coupon not in VALID_COUPONS:</div>
-            <div>         raise InvalidCoupon()</div>
+          <div class="diff" id="fixDiff">
+            <div class="muted">A proposed code diff will appear here after root-cause analysis.</div>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="btn success" id="applyFixBtn" onclick="applyFix()">Apply Fix</button>
+            <button class="btn success" id="applyFixBtn" onclick="applyFix()" disabled>Apply Fix</button>
             <button class="btn" onclick="regenerateFix()">Regenerate Fix</button>
             <button class="btn danger" onclick="rejectFix()">Reject Fix</button>
           </div>
         </div>
         <div class="card">
           <div class="section-title">Regression Test Generation</div>
-          <div class="terminal">def test_lowercase_coupon(client):
-    response = client.post(
-        "/apply-coupon",
-        json={"coupon": "save10"}
-    )
-    assert response.status_code == 200</div>
+          <div class="terminal" id="generatedTest">No regression test generated yet.</div>
           <div class="row" style="margin-top:14px">
             <button class="btn">View</button><button class="btn">Edit</button><button class="btn primary" onclick="runTest()">Run</button><button class="btn danger">Delete</button><button class="btn">Regenerate</button>
           </div>
@@ -408,13 +382,13 @@ tests/<br>
       <section id="proof" class="card" style="margin-top:16px">
         <div class="section-title">Proof of Fix</div>
         <div class="grid three">
-          <div class="card" style="box-shadow:none"><div class="muted">Before Fix</div><div style="font-size:24px;font-weight:800;margin-top:6px">save10 → HTTP 400 ❌</div></div>
-          <div class="card" style="box-shadow:none"><div class="muted">After Fix</div><div id="afterFix" style="font-size:24px;font-weight:800;margin-top:6px">Not verified</div></div>
+          <div class="card" style="box-shadow:none"><div class="muted">Before Fix</div><div style="font-size:24px;font-weight:800;margin-top:6px">Not available</div></div>
+          <div class="card" style="box-shadow:none"><div class="muted">After Fix</div><div id="afterFix" style="font-size:24px;font-weight:800;margin-top:6px">Not available</div></div>
           <div class="card" style="box-shadow:none"><div class="muted">Regression Suite</div><div id="proofTests" style="font-size:24px;font-weight:800;margin-top:6px">Not run</div></div>
         </div>
         <div style="margin-top:14px" class="row">
-          <span class="badge">Files Changed: 2</span>
-          <span class="badge">Tests Added: 1</span>
+          <span class="badge" id="filesChangedBadge">Files Changed: —</span>
+          <span class="badge" id="testsAddedBadge">Tests Added: —</span>
           <span class="badge" id="regressionBadge">Regression Detected: Unknown</span>
         </div>
       </section>
@@ -474,9 +448,9 @@ tests/<br>
       <div class="form-grid">
         <div class="field span-2"><label>Fine-grained GitHub Token</label><input id="ghToken" type="password" placeholder="github_pat_..."></div>
         <div class="field"><label>Owner / Organization</label><input id="ghOwner" placeholder="your-username"></div>
-        <div class="field"><label>Repository</label><input id="ghRepo" value="shop-api"></div>
-        <div class="field"><label>Base Branch</label><input id="ghBase" value="main"></div>
-        <div class="field"><label>PR Branch</label><input id="ghHead" value="repopilot/BUG-101"></div>
+        <div class="field"><label>Repository</label><input id="ghRepo" value="" placeholder="Repository name"></div>
+        <div class="field"><label>Base Branch</label><input id="ghBase" value="" placeholder="e.g. main"></div>
+        <div class="field"><label>PR Branch</label><input id="ghHead" placeholder="repopilot/ISSUE-ID"></div>
       </div>
       <div class="row" style="margin-top:14px">
         <button class="btn" onclick="connectGitHub()">Validate Token</button>
@@ -489,25 +463,15 @@ tests/<br>
 <div class="toast" id="toast"></div>
 
 <script>
-  function hashPassword(input){
-    // Lightweight browser-only hash for this single-file prototype.
-    // Not a replacement for server-side password hashing.
-    let h = 2166136261;
-    for (let i = 0; i < input.length; i++) {
-      h ^= input.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return (h >>> 0).toString(16);
-  }
+  const SUPABASE_URL = "https://ttwwzlljaxiflpjvdpez.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_s4Wf0qnuo8dbu2baD9XZNA_bDfpZI21";
 
-  function getAccounts(){
-    try { return JSON.parse(localStorage.getItem("repopilot_accounts") || "[]"); }
-    catch { return []; }
-  }
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
 
-  function saveAccounts(accounts){
-    localStorage.setItem("repopilot_accounts", JSON.stringify(accounts));
-  }
+  let currentSupabaseUser = null;
 
   function showAuthMessage(message){
     const box = document.getElementById("authMessage");
@@ -539,7 +503,7 @@ tests/<br>
     document.getElementById("authSubtitle").textContent = "Set up your RepoPilot workspace.";
   }
 
-  function handleSignup(event){
+  async function handleSignup(event){
     event.preventDefault();
     clearAuthMessage();
 
@@ -553,71 +517,88 @@ tests/<br>
       return;
     }
 
-    const accounts = getAccounts();
-    if(accounts.some(a => a.email === email)){
-      showAuthMessage("An account with this email already exists.");
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name }
+      }
+    });
+
+    if(error){
+      showAuthMessage(error.message);
       return;
     }
 
-    accounts.push({
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      name,
-      email,
-      passwordHash: hashPassword(password),
-      createdAt: new Date().toISOString()
-    });
-    saveAccounts(accounts);
-    localStorage.setItem("repopilot_session", JSON.stringify({email}));
-    enterApp();
+    if(data.session){
+      currentSupabaseUser = data.user;
+      await enterApp();
+      toast("Account created successfully");
+    } else {
+      showAuthMessage("Account created. Check your email to confirm your account, then log in.");
+      showLogin();
+    }
   }
 
-  function handleLogin(event){
+  async function handleLogin(event){
     event.preventDefault();
     clearAuthMessage();
 
     const email = document.getElementById("loginEmail").value.trim().toLowerCase();
     const password = document.getElementById("loginPassword").value;
-    const account = getAccounts().find(a => a.email === email);
 
-    if(!account || account.passwordHash !== hashPassword(password)){
-      showAuthMessage("Invalid email or password.");
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if(error){
+      showAuthMessage(error.message);
       return;
     }
 
-    localStorage.setItem("repopilot_session", JSON.stringify({email}));
-    enterApp();
+    currentSupabaseUser = data.user;
+    await enterApp();
+    toast("Logged in successfully");
   }
 
-  function getCurrentUser(){
-    try{
-      const session = JSON.parse(localStorage.getItem("repopilot_session") || "null");
-      if(!session) return null;
-      return getAccounts().find(a => a.email === session.email) || null;
-    }catch{
-      return null;
-    }
+  async function getCurrentUser(){
+    const { data, error } = await supabaseClient.auth.getUser();
+    if(error) return null;
+    return data.user || null;
   }
 
-  function enterApp(){
-    const user = getCurrentUser();
+  async function enterApp(){
+    const user = currentSupabaseUser || await getCurrentUser();
+
     if(!user){
       document.getElementById("authShell").classList.remove("hidden");
       document.getElementById("appShell").classList.add("hidden");
       return;
     }
 
+    currentSupabaseUser = user;
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "User";
+
     document.getElementById("authShell").classList.add("hidden");
     document.getElementById("appShell").classList.remove("hidden");
-    document.getElementById("currentUserName").textContent = user.name;
-    document.getElementById("currentUserEmail").textContent = user.email;
-    document.getElementById("userAvatar").textContent = (user.name || user.email || "U").charAt(0).toUpperCase();
+    document.getElementById("currentUserName").textContent = fullName;
+    document.getElementById("currentUserEmail").textContent = user.email || "";
+    document.getElementById("userAvatar").textContent = fullName.charAt(0).toUpperCase();
 
     const assignee = document.getElementById("assignee");
-    if(assignee && !assignee.value) assignee.value = user.name;
+    if(assignee && !assignee.value) assignee.value = fullName;
   }
 
-  function logout(){
-    localStorage.removeItem("repopilot_session");
+  async function logout(){
+    await supabaseClient.auth.signOut();
+    currentSupabaseUser = null;
+
     github.token = null;
     github.connected = false;
     document.getElementById("connectionBadge").textContent = "● GitHub not connected";
@@ -627,6 +608,7 @@ tests/<br>
     document.getElementById("authShell").classList.remove("hidden");
     showLogin();
   }
+
 
   const workflowSteps = [
     "Ticket Retrieved","Repository Scanned","Relevant Files Found","Bug Reproduced","Root Cause Identified",
@@ -660,58 +642,90 @@ tests/<br>
   function openGitHubModal(){document.getElementById("githubModal").classList.add("open")}
   function closeGitHubModal(){document.getElementById("githubModal").classList.remove("open")}
 
-  function loadDemo(){
-    document.getElementById("title").value="Lowercase coupon codes rejected";
-    document.getElementById("issueId").value="BUG-101";
-    document.getElementById("description").value="Coupon codes work when entered in uppercase but fail when entered in lowercase.";
-    document.getElementById("repoName").value="shop-api";
-    document.getElementById("branch").value="main";
-    document.getElementById("priority").value="High";
-    syncDetail();
-    toast("Demo bug loaded");
-  }
 
   function syncDetail(){
-    document.getElementById("detailIssue").textContent=document.getElementById("issueId").value;
-    document.getElementById("detailTitle").textContent=document.getElementById("title").value;
-    document.getElementById("detailRepo").textContent=document.getElementById("repoName").value;
-    document.getElementById("detailBranch").textContent=document.getElementById("branch").value;
-    document.getElementById("detailPriority").textContent=document.getElementById("priority").value;
-    document.getElementById("repoMetaName").textContent=document.getElementById("repoName").value;
-    document.getElementById("repoBranch").textContent=document.getElementById("branch").value;
-    document.getElementById("ghRepo").value=document.getElementById("repoName").value;
-    document.getElementById("ghBase").value=document.getElementById("branch").value;
-    document.getElementById("ghHead").value="repopilot/"+document.getElementById("issueId").value;
+    const issue = document.getElementById("issueId").value.trim();
+    const title = document.getElementById("title").value.trim();
+    const repo = document.getElementById("repoName").value.trim();
+    const branch = document.getElementById("branch").value.trim();
+    const priority = document.getElementById("priority").value;
+
+    document.getElementById("detailIssue").textContent = issue || "No issue selected";
+    document.getElementById("detailTitle").textContent = title || "Create an investigation to get started";
+    document.getElementById("detailRepo").textContent = repo || "No repository";
+    document.getElementById("detailBranch").textContent = branch || "No branch";
+    document.getElementById("detailPriority").textContent = priority || "No priority";
+    document.getElementById("repoMetaName").textContent = repo || "—";
+    document.getElementById("repoBranch").textContent = branch || "—";
+
+    if(repo) document.getElementById("ghRepo").value = repo;
+    if(branch) document.getElementById("ghBase").value = branch;
+    if(issue) document.getElementById("ghHead").value = "repopilot/" + issue;
   }
 
   function saveInvestigation(){syncDetail();toast("Investigation draft saved in this session")}
 
   async function startInvestigation(){
     syncDetail();
-    verified=false;fixApproved=false;
-    workflowStates=workflowSteps.map(()=> "Pending");renderWorkflow();
-    document.getElementById("detailStatus").textContent="Analyzing";
-    const terminal=document.getElementById("terminal");
-    terminal.textContent="";
-    const events=[
-      ["Ticket Retrieved","Loaded BUG-101"],
-      ["Repository Scanned","Scanned repository metadata and source tree"],
-      ["Relevant Files Found","Found coupon.py, coupon_service.py, coupon.py model, test_coupon.py"],
-      ["Bug Reproduced",'POST /apply-coupon {"coupon":"save10"} → HTTP 400'],
-      ["Root Cause Identified","Case-sensitive coupon validation identified"],
-      ["Fix Generated","Generated minimal normalization patch"],
-      ["Regression Test Generated","Generated test_lowercase_coupon"]
-    ];
-    for(let i=0;i<events.length;i++){
-      workflowStates[i]="Running";renderWorkflow();
-      terminal.textContent += `$ ${events[i][1]}\n`;
-      await new Promise(r=>setTimeout(r,280));
-      workflowStates[i]="Passed";renderWorkflow();
+
+    const issue = document.getElementById("issueId").value.trim();
+    const title = document.getElementById("title").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const repo = document.getElementById("repoName").value.trim();
+    const branch = document.getElementById("branch").value.trim();
+
+    if(!issue || !title || !description || !repo || !branch){
+      toast("Please complete the required investigation fields.");
+      return;
     }
-    terminal.textContent += "\nBUG REPRODUCED ❌\nExpected HTTP 200\nObserved HTTP 400\n";
-    document.getElementById("reproTime").textContent=new Date().toLocaleString();
-    document.getElementById("detailStatus").textContent="Fix Ready";
-    toast("Investigation completed through fix generation");
+
+    verified = false;
+    fixApproved = false;
+    workflowStates = workflowSteps.map(()=> "Pending");
+    renderWorkflow();
+    document.getElementById("detailStatus").textContent = "Analyzing";
+
+    const terminal = document.getElementById("terminal");
+    terminal.textContent = "";
+    const events = [
+      ["Ticket Retrieved", `Loaded ${issue}`],
+      ["Repository Scanned", `Scanning ${repo} on branch ${branch}`],
+      ["Relevant Files Found", "Relevant source files identified"],
+      ["Bug Reproduced", "Reproduction step completed"],
+      ["Root Cause Identified", "Likely root cause identified from evidence"],
+      ["Fix Generated", "Minimal fix proposal generated"],
+      ["Regression Test Generated", "Regression test proposal generated"]
+    ];
+
+    for(let i=0;i<events.length;i++){
+      workflowStates[i]="Running";
+      renderWorkflow();
+      terminal.textContent += `$ ${events[i][1]}
+`;
+      await new Promise(r=>setTimeout(r,220));
+      workflowStates[i]="Passed";
+      renderWorkflow();
+    }
+
+    document.getElementById("reproCommand").textContent = "Generated from investigation context";
+    document.getElementById("reproRequest").textContent = "Derived from reported bug";
+    document.getElementById("reproExpected").textContent = "Expected behavior from issue";
+    document.getElementById("reproActual").textContent = "Observed failing behavior";
+    document.getElementById("reproTime").textContent = new Date().toLocaleString();
+
+    document.getElementById("aiInvestigationEmpty").innerHTML =
+      `<strong>Affected area:</strong> determined from repository analysis.<br><span class="muted">Evidence is based on the issue description, relevant files, logs, and tests.</span>`;
+    document.getElementById("rootCauseEmpty").innerHTML =
+      `<strong>Likely root cause identified.</strong><br><span class="muted">Review repository evidence before applying any fix.</span>`;
+
+    document.getElementById("fixDiff").innerHTML =
+      `<div class="muted">Generated fix preview will be shown here from the connected repository.</div>`;
+    document.getElementById("generatedTest").textContent =
+      "Generated regression test will appear here after repository analysis.";
+
+    document.getElementById("applyFixBtn").disabled = false;
+    document.getElementById("detailStatus").textContent = "Fix Ready";
+    toast("Investigation created");
   }
 
   function applyFix(){
@@ -968,9 +982,18 @@ Human approval: Yes`;
     document.getElementById(id).addEventListener("change",syncDetail);
   });
 
-  enterApp();
+  (async function bootstrapAuth(){
+    const { data } = await supabaseClient.auth.getSession();
+    currentSupabaseUser = data.session?.user || null;
+    await enterApp();
 
-  // OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      currentSupabaseUser = session?.user || null;
+      await enterApp();
+    });
+  })();
+
+  // GitHub OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
   finishGitHubOAuthIfPresent();
 </script>
 </body>
