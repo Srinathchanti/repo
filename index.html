@@ -352,6 +352,18 @@
           </div>
         </div>
         <div id="githubInfo" class="successbox hidden" style="margin-top:14px"></div>
+        <div id="githubAccountCard" class="card hidden" style="margin-top:14px;box-shadow:none">
+          <div class="row" style="justify-content:space-between">
+            <div class="row">
+              <img id="githubAvatar" alt="GitHub avatar" style="width:42px;height:42px;border-radius:50%;border:1px solid var(--line)">
+              <div>
+                <div style="font-weight:800" id="githubUsername">GitHub</div>
+                <div class="muted" id="githubAccountMeta">Connected</div>
+              </div>
+            </div>
+            <button class="btn danger" onclick="disconnectGitHub()">Disconnect</button>
+          </div>
+        </div>
         <div class="warning" style="margin-top:14px">
           GitHub login cannot be displayed inside an embedded preview, so RepoPilot now redirects the current tab directly to GitHub for authorization. For a complete OAuth connection, configure a GitHub OAuth App and a small backend token-exchange endpoint; the client secret must never be placed in this HTML file.
         </div>
@@ -710,6 +722,7 @@
 
     github.token = null;
     github.connected = false;
+    clearGitHubSession();
     updateGithubConnectionControls();
     document.getElementById("connectionBadge").textContent = "● GitHub not connected";
     document.getElementById("connectionBadge").className = "badge";
@@ -731,6 +744,37 @@
   let github = { token:null, owner:null, repo:null, base:"main", head:null, connected:false, defaultBranch:"main" };
   let githubRepos = [];
   let selectedGitHubRepo = null;
+
+  function saveGitHubSession(){
+    if(!github.connected || !github.token) return;
+    sessionStorage.setItem("repopilot_github_session", JSON.stringify({
+      token: github.token,
+      owner: github.owner,
+      repo: github.repo,
+      base: github.base,
+      head: github.head,
+      connected: true,
+      defaultBranch: github.defaultBranch,
+      user: github.user || null
+    }));
+  }
+
+  function loadGitHubSession(){
+    try{
+      const raw = sessionStorage.getItem("repopilot_github_session");
+      if(!raw) return false;
+      const saved = JSON.parse(raw);
+      if(!saved?.token || !saved.connected) return false;
+      github = Object.assign(github, saved);
+      return true;
+    }catch{
+      return false;
+    }
+  }
+
+  function clearGitHubSession(){
+    sessionStorage.removeItem("repopilot_github_session");
+  }
   let selectedGitHubRepoData = { branches:[], issues:[], commits:[], prs:[] };
   let activeGitHubTab = "branches";
   let fixApproved = false;
@@ -960,6 +1004,8 @@
       const user = await ghFetch("/user");
       github.connected = true;
       github.owner = user.login;
+      github.user = user;
+      saveGitHubSession();
       updateGithubConnectionControls();
 
       document.getElementById("connectionBadge").textContent="● GitHub connected";
@@ -1003,13 +1049,14 @@
     const settingsBtn = document.getElementById("settingsGithubButton");
 
     if(github.connected){
+      const username = github.user?.login || github.owner || "GitHub";
       if(topBtn){
-        topBtn.textContent = "GitHub Connected ✓";
+        topBtn.textContent = `GitHub · ${username} ✓`;
         topBtn.classList.remove("primary");
         topBtn.classList.add("success");
       }
       if(settingsBtn){
-        settingsBtn.textContent = "Manage GitHub";
+        settingsBtn.textContent = `GitHub · ${username}`;
         settingsBtn.classList.remove("primary");
       }
     } else {
@@ -1033,8 +1080,50 @@
     openGitHubModal();
   }
 
+  function renderGitHubAccount(){
+    const card = document.getElementById("githubAccountCard");
+    if(!card) return;
+
+    if(!github.connected){
+      card.classList.add("hidden");
+      return;
+    }
+
+    const user = github.user || {};
+    const username = user.login || github.owner || "GitHub user";
+    document.getElementById("githubUsername").textContent = username;
+    document.getElementById("githubAccountMeta").textContent =
+      user.name ? `${user.name} · Connected to RepoPilot` : "Connected to RepoPilot";
+    document.getElementById("githubAvatar").src =
+      user.avatar_url || "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png";
+    card.classList.remove("hidden");
+  }
+
+  async function disconnectGitHub(){
+    github.token = null;
+    github.owner = null;
+    github.repo = null;
+    github.base = "main";
+    github.head = null;
+    github.connected = false;
+    github.user = null;
+    githubRepos = [];
+    selectedGitHubRepo = null;
+    clearGitHubSession();
+
+    document.getElementById("connectionBadge").textContent = "● GitHub not connected";
+    document.getElementById("connectionBadge").className = "badge";
+    document.getElementById("githubInfo").classList.add("hidden");
+    renderGitHubAccount();
+    showGitHubDisconnectedUI();
+    updateGithubConnectionControls();
+    toast("GitHub disconnected");
+  }
+
   function showGitHubConnectedUI(){
     updateGithubConnectionControls();
+    renderGitHubAccount();
+    saveGitHubSession();
     document.getElementById("githubDisconnectedState").classList.add("hidden");
     document.getElementById("githubConnectedWorkspace").classList.remove("hidden");
     document.getElementById("refreshGithubBtn").disabled = false;
@@ -1042,6 +1131,7 @@
 
   function showGitHubDisconnectedUI(){
     updateGithubConnectionControls();
+    renderGitHubAccount();
     document.getElementById("githubDisconnectedState").classList.remove("hidden");
     document.getElementById("githubConnectedWorkspace").classList.add("hidden");
     document.getElementById("refreshGithubBtn").disabled = true;
@@ -1298,6 +1388,8 @@
       const repo=await ghFetch(`/repos/${github.owner}/${github.repo}`);
       github.connected=true;
       github.defaultBranch=repo.default_branch;
+      github.user = user;
+      saveGitHubSession();
       updateGithubConnectionControls();
       document.getElementById("connectionBadge").textContent="● GitHub connected";
       document.getElementById("connectionBadge").className="badge success";
@@ -1390,10 +1482,43 @@ Human approval: Yes`;
     document.getElementById(id).addEventListener("change",syncDetail);
   });
 
+
+  async function restoreGitHubConnectionInBackground(){
+    if(!loadGitHubSession()){
+      showGitHubDisconnectedUI();
+      return;
+    }
+
+    try{
+      // Validate the stored session quietly in the background.
+      const user = await ghFetch("/user");
+      github.user = user;
+      github.owner = user.login;
+      github.connected = true;
+
+      document.getElementById("connectionBadge").textContent = "● GitHub connected";
+      document.getElementById("connectionBadge").className = "badge success";
+      document.getElementById("githubInfo").classList.remove("hidden");
+      document.getElementById("githubInfo").innerHTML =
+        `<strong>GitHub connected</strong><br>Signed in as ${escapeHtml(user.login)}. RepoPilot restored this connection in the background.`;
+
+      showGitHubConnectedUI();
+      await refreshGitHubWorkspace();
+    }catch(err){
+      clearGitHubSession();
+      github.connected = false;
+      github.token = null;
+      showGitHubDisconnectedUI();
+    }
+  }
+
   (async function bootstrapAuth(){
     const { data } = await supabaseClient.auth.getSession();
     currentSupabaseUser = data.session?.user || null;
     await enterApp();
+    if(currentSupabaseUser){
+      await restoreGitHubConnectionInBackground();
+    }
 
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentSupabaseUser = session?.user || null;
@@ -1402,7 +1527,6 @@ Human approval: Yes`;
   })();
 
   updateGithubConnectionControls();
-  showGitHubDisconnectedUI();
 
   // GitHub OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
   finishGitHubOAuthIfPresent();
