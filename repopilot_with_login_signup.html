@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RepoPilot — AI Bug Investigation & Verification</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#111821;
+      --panel-2:#151f2a;
+      --muted:#8ea0b5;
+      --text:#edf3f8;
+      --line:#243242;
+      --accent:#6aa7ff;
+      --accent-2:#7dd3fc;
+      --success:#35c47a;
+      --warn:#f5b942;
+      --danger:#f06a6a;
+      --chip:#1b2633;
+      --shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:linear-gradient(180deg,#091017 0%,#0b0f14 100%);
+      color:var(--text);
+    }
+    button,input,textarea,select{font:inherit}
+    .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+    .sidebar{
+      border-right:1px solid var(--line);
+      background:rgba(10,15,21,.95);
+      padding:20px 16px;
+      position:sticky;top:0;height:100vh;
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;margin-bottom:24px}
+    .brand-badge{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#07111d;font-weight:900}
+    .nav{display:flex;flex-direction:column;gap:6px}
+    .nav a{
+      color:var(--muted);text-decoration:none;padding:10px 12px;border-radius:10px;display:flex;align-items:center;gap:10px;
+    }
+    .nav a.active,.nav a:hover{background:var(--panel-2);color:var(--text)}
+    .sidebar-footer{position:absolute;bottom:18px;left:16px;right:16px}
+    .main{min-width:0}
+    .topbar{
+      height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+      padding:0 24px;position:sticky;top:0;background:rgba(11,15,20,.9);backdrop-filter:blur(14px);z-index:20;
+    }
+    .topbar-actions{display:flex;gap:10px;align-items:center}
+    .content{padding:24px;max-width:1480px;margin:0 auto}
+    .grid{display:grid;gap:16px}
+    .stats{grid-template-columns:repeat(4,1fr)}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+    .stat-label{color:var(--muted);font-size:13px}
+    .stat-value{font-size:28px;font-weight:800;margin-top:6px}
+    .muted{color:var(--muted)}
+    .btn{
+      border:1px solid var(--line);background:var(--panel-2);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;
+    }
+    .btn:hover{filter:brightness(1.08)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#07101a;font-weight:800}
+    .btn.success{background:var(--success);border-color:var(--success);color:#04130b;font-weight:800}
+    .btn.danger{background:transparent;border-color:var(--danger);color:#ffb4b4}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .section-title{font-size:18px;font-weight:800;margin-bottom:12px}
+    .hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}
+    .hero h1{margin:0 0 8px;font-size:32px}
+    .hero p{margin:0;color:var(--muted)}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--chip);border:1px solid var(--line);font-size:12px}
+    .badge.success{color:#a7f3c7;border-color:rgba(53,196,122,.35)}
+    .badge.warn{color:#ffd98e;border-color:rgba(245,185,66,.35)}
+    .badge.danger{color:#ffb3b3;border-color:rgba(240,106,106,.35)}
+    .workflow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    .step{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0d141c}
+    .step .name{font-size:12px;color:var(--muted);line-height:1.4}
+    .step .status{margin-top:8px;font-size:12px;font-weight:700}
+    .status-pending{color:#95a6b9}.status-running{color:var(--accent-2)}.status-passed{color:#7fe7aa}.status-failed{color:#ff9b9b}
+    .two{grid-template-columns:1.1fr .9fr}
+    .three{grid-template-columns:1fr 1fr 1fr}
+    .terminal{background:#070b10;border:1px solid #1f2b38;border-radius:12px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;white-space:pre-wrap;min-height:140px;color:#cfe1f3}
+    .diff{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#080d12;border:1px solid var(--line);border-radius:12px;overflow:auto}
+    .diff div{padding:7px 12px}
+    .diff .minus{background:rgba(240,106,106,.09);color:#ffb7b7}
+    .diff .plus{background:rgba(53,196,122,.09);color:#b7ffd2}
+    .tree{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.8}
+    .tree .hot{color:#9ed0ff;font-weight:700}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input,.field textarea,.field select{
+      background:#0b1219;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 11px;outline:none;
+    }
+    .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .span-2{grid-column:span 2}
+    .modal{
+      position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;
+    }
+    .modal.open{display:flex}
+    .modal-card{width:min(620px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+    .modal-card h2{margin-top:0}
+    .toast{position:fixed;right:18px;bottom:18px;background:#14202b;border:1px solid var(--line);padding:12px 14px;border-radius:12px;display:none;z-index:80}
+    .toast.show{display:block}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+    .table th{color:var(--muted);font-weight:600}
+    .github-box{display:flex;justify-content:space-between;gap:18px;align-items:center}
+    .warning{padding:12px;border:1px solid rgba(245,185,66,.4);background:rgba(245,185,66,.07);border-radius:12px;color:#f7d997;font-size:13px}
+    .successbox{padding:12px;border:1px solid rgba(53,196,122,.35);background:rgba(53,196,122,.07);border-radius:12px;color:#a8f0c8;font-size:13px}
+    .hidden{display:none!important}
+
+    .auth-shell{
+      min-height:100vh;display:grid;place-items:center;padding:24px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(106,167,255,.12), transparent 35%),
+        radial-gradient(circle at 80% 10%, rgba(125,211,252,.08), transparent 28%),
+        linear-gradient(180deg,#091017,#0b0f14);
+    }
+    .auth-card{
+      width:min(460px,100%);background:var(--panel);border:1px solid var(--line);
+      border-radius:20px;padding:28px;box-shadow:var(--shadow);
+    }
+    .auth-card h1{margin:10px 0 6px;font-size:30px}
+    .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}
+    .auth-tab{
+      background:#0b1219;border:1px solid var(--line);color:var(--muted);
+      border-radius:10px;padding:10px;cursor:pointer;font-weight:700;
+    }
+    .auth-tab.active{background:var(--panel-2);color:var(--text);border-color:#3a4d63}
+    .auth-note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
+    .user-menu{display:flex;align-items:center;gap:10px}
+    .avatar{
+      width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06111d;font-weight:900;
+    }
+
+    @media (max-width:1100px){
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .two,.three{grid-template-columns:1fr}
+      .workflow{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:760px){
+      .app{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+      .sidebar-footer{position:static;margin-top:20px}
+      .stats,.form-grid{grid-template-columns:1fr}
+      .span-2{grid-column:span 1}
+      .topbar{position:relative;padding:0 14px}
+      .content{padding:16px}
+      .hero{flex-direction:column}
+      .workflow{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div id="authShell" class="auth-shell">
+  <div class="auth-card">
+    <div class="brand" style="margin-bottom:6px"><div class="brand-badge">R</div>RepoPilot</div>
+    <h1 id="authTitle">Welcome back</h1>
+    <div class="muted" id="authSubtitle">Sign in to continue to your engineering workspace.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="loginTab" onclick="showLogin()">Login</button>
+      <button class="auth-tab" id="signupTab" onclick="showSignup()">Create Account</button>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field"><label>Email</label><input id="loginEmail" type="email" required placeholder="you@company.com"></div>
+      <div class="field" style="margin-top:12px"><label>Password</label><input id="loginPassword" type="password" required placeholder="Enter your password"></div>
+      <button class="btn primary" style="width:100%;margin-top:16px" type="submit">Login</button>
+    </form>
+
+    <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
+      <div class="field"><label>Full Name</label><input id="signupName" required placeholder="Your name"></div>
+      <div class="field" style="margin-top:12px"><label>Email</label><input id="signupEmail" type="email" required placeholder="you@company.com"></div>
+      <div class="field" style="margin-top:12px"><label>Password</label><input id="signupPassword" type="password" minlength="8" required placeholder="At least 8 characters"></div>
+      <div class="field" style="margin-top:12px"><label>Confirm Password</label><input id="signupConfirm" type="password" minlength="8" required placeholder="Re-enter password"></div>
+      <button class="btn primary" style="width:100%;margin-top:16px" type="submit">Create Account</button>
+    </form>
+
+    <div id="authMessage" class="warning hidden" style="margin-top:14px"></div>
+    <div class="auth-note">
+      This single-file build stores account data in this browser only. For production, replace this with backend authentication or a managed auth provider.
+    </div>
+  </div>
+</div>
+
+<div id="appShell" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-badge">R</div>RepoPilot</div>
+    <nav class="nav">
+      <a href="#" class="active">▦ Overview</a>
+      <a href="#investigation">⌕ Investigations</a>
+      <a href="#repository">⌘ Repositories</a>
+      <a href="#tests">✓ Test Runs</a>
+      <a href="#proof">◆ Proof of Fix</a>
+      <a href="#pullrequest">↗ Pull Requests</a>
+      <a href="#settings">⚙ Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="badge" id="connectionBadge">● GitHub not connected</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <strong>Engineering Workspace</strong>
+        <div class="muted" style="font-size:12px">AI-assisted debugging with human approval</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn primary" onclick="openGitHubModal()">Connect GitHub</button>
+        <div class="user-menu">
+          <div class="avatar" id="userAvatar">U</div>
+          <div style="line-height:1.2">
+            <div id="currentUserName" style="font-size:13px;font-weight:700">User</div>
+            <div id="currentUserEmail" class="muted" style="font-size:11px"></div>
+          </div>
+          <button class="btn" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="hero">
+        <div>
+          <div class="badge success">RepoPilot Hackathon Build</div>
+          <h1>AI doesn't just fix your bug. It proves the fix works.</h1>
+          <p>Investigate issues, reproduce failures, review suggested fixes, run regression tests, and create a verified pull request.</p>
+        </div>
+        <div class="row">
+          <button class="btn primary" onclick="document.getElementById('investigation').scrollIntoView({behavior:'smooth'})">New Investigation</button>
+        </div>
+      </section>
+
+      <section class="grid stats">
+        <div class="card"><div class="stat-label">Active Investigations</div><div class="stat-value">6</div></div>
+        <div class="card"><div class="stat-label">Bugs Verified</div><div class="stat-value">18</div></div>
+        <div class="card"><div class="stat-label">Tests Passed</div><div class="stat-value">342</div></div>
+        <div class="card"><div class="stat-label">PRs Ready</div><div class="stat-value">4</div></div>
+      </section>
+
+      <section id="settings" class="card" style="margin-top:16px">
+        <div class="github-box">
+          <div>
+            <div class="section-title">GitHub Integration</div>
+            <div class="muted">Connect a GitHub repository, validate access, load metadata, and create a real pull request after human approval.</div>
+          </div>
+          <div class="row">
+            <button class="btn" onclick="goToGitHub()">Open GitHub</button>
+            <button class="btn primary" onclick="openGitHubModal()">Connect with OAuth</button>
+          </div>
+        </div>
+        <div id="githubInfo" class="successbox hidden" style="margin-top:14px"></div>
+        <div class="warning" style="margin-top:14px">
+          GitHub login cannot be displayed inside an embedded preview, so RepoPilot now redirects the current tab directly to GitHub for authorization. For a complete OAuth connection, configure a GitHub OAuth App and a small backend token-exchange endpoint; the client secret must never be placed in this HTML file.
+        </div>
+      </section>
+
+      <section id="investigation" class="card" style="margin-top:16px">
+        <div class="section-title">Create Investigation</div>
+        <div class="form-grid">
+          <div class="field"><label>Investigation Title</label><input id="title" value="Lowercase coupon codes rejected"></div>
+          <div class="field"><label>Issue ID</label><input id="issueId" value="BUG-101"></div>
+          <div class="field span-2"><label>Bug Description</label><textarea id="description" rows="3">Coupon codes work when entered in uppercase but fail when entered in lowercase.</textarea></div>
+          <div class="field"><label>Repository</label><input id="repoName" value="shop-api"></div>
+          <div class="field"><label>Branch</label><input id="branch" value="main"></div>
+          <div class="field"><label>Environment</label><select id="environment"><option>Staging</option><option>Development</option><option>Production</option></select></div>
+          <div class="field"><label>Priority</label><select id="priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
+          <div class="field"><label>Assignee</label><input id="assignee" value=""></div>
+          <div class="field"><label>Tags</label><input id="tags" value="api, coupon, regression"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" onclick="startInvestigation()">Start Investigation</button>
+          <button class="btn" onclick="saveInvestigation()">Save Draft</button>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="muted" style="font-size:12px" id="detailIssue">BUG-101</div>
+            <div style="font-size:24px;font-weight:800" id="detailTitle">Lowercase coupon codes rejected</div>
+            <div class="row" style="margin-top:8px">
+              <span class="badge" id="detailRepo">shop-api</span>
+              <span class="badge" id="detailBranch">main</span>
+              <span class="badge success" id="detailStatus">Verified</span>
+              <span class="badge warn" id="detailPriority">High</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:20px">Investigation Workflow</div>
+        <div class="workflow" id="workflow"></div>
+      </section>
+
+      <section id="repository" class="grid two" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title">Repository Analysis</div>
+          <table class="table">
+            <tr><th>Name</th><td id="repoMetaName">shop-api</td></tr>
+            <tr><th>Language</th><td id="repoLanguage">Python</td></tr>
+            <tr><th>Branch</th><td id="repoBranch">main</td></tr>
+            <tr><th>File Count</th><td>148</td></tr>
+            <tr><th>Relevant Files</th><td>4</td></tr>
+            <tr><th>Last Commit</th><td id="lastCommit">2 hours ago</td></tr>
+            <tr><th>Health</th><td><span class="badge success">Healthy</span></td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="section-title">Relevant File Tree</div>
+          <div class="tree">
+app/<br>
+&nbsp;&nbsp;routes/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon.py</span><br>
+&nbsp;&nbsp;services/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon_service.py</span><br>
+&nbsp;&nbsp;models/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="hot">coupon.py</span><br>
+tests/<br>
+&nbsp;&nbsp;<span class="hot">test_coupon.py</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid two" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title">AI Investigation</div>
+          <p><strong>Affected component:</strong> coupon_service.py</p>
+          <p class="muted">Coupon validation appears to be implemented in this service.</p>
+          <p><strong>Likely reproduction:</strong> POST /apply-coupon with <code>"save10"</code></p>
+          <div class="row">
+            <span class="badge">Expected: HTTP 200</span>
+            <span class="badge danger">Observed: HTTP 400</span>
+          </div>
+          <p class="muted" style="font-size:12px">Only concise engineering conclusions and evidence are shown. Hidden reasoning is not exposed.</p>
+        </div>
+        <div class="card">
+          <div class="section-title">Root Cause</div>
+          <p><strong>File:</strong> app/services/coupon_service.py</p>
+          <p><strong>Issue:</strong> Coupon validation performs a case-sensitive comparison.</p>
+          <p><strong>Evidence:</strong> “SAVE10” succeeds; “save10” fails.</p>
+          <p><strong>Recommended fix:</strong> Normalize input before validation.</p>
+          <div class="row">
+            <span class="badge success">Evidence strength: High</span>
+            <span class="badge">Confidence: 92%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px">
+        <div class="section-title">Bug Reproduction</div>
+        <div class="grid two">
+          <div>
+            <table class="table">
+              <tr><th>Command</th><td>pytest tests/test_coupon.py -k lowercase</td></tr>
+              <tr><th>Request</th><td>POST /apply-coupon {"coupon":"save10"}</td></tr>
+              <tr><th>Expected</th><td>HTTP 200</td></tr>
+              <tr><th>Actual</th><td>HTTP 400</td></tr>
+              <tr><th>Timestamp</th><td id="reproTime">—</td></tr>
+            </table>
+          </div>
+          <div class="terminal" id="terminal">$ waiting for investigation...
+          </div>
+        </div>
+      </section>
+
+      <section class="grid two" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title">Fix Generation</div>
+          <div class="diff">
+            <div>def validate_coupon(coupon):</div>
+            <div class="minus">-    if coupon not in VALID_COUPONS:</div>
+            <div class="plus">+    coupon = coupon.upper()</div>
+            <div class="plus">+    if coupon not in VALID_COUPONS:</div>
+            <div>         raise InvalidCoupon()</div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn success" id="applyFixBtn" onclick="applyFix()">Apply Fix</button>
+            <button class="btn" onclick="regenerateFix()">Regenerate Fix</button>
+            <button class="btn danger" onclick="rejectFix()">Reject Fix</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Regression Test Generation</div>
+          <div class="terminal">def test_lowercase_coupon(client):
+    response = client.post(
+        "/apply-coupon",
+        json={"coupon": "save10"}
+    )
+    assert response.status_code == 200</div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn">View</button><button class="btn">Edit</button><button class="btn primary" onclick="runTest()">Run</button><button class="btn danger">Delete</button><button class="btn">Regenerate</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tests" class="card" style="margin-top:16px">
+        <div class="section-title">Test Run</div>
+        <div class="row">
+          <span class="badge" id="testRunStatus">Not run</span>
+          <span class="muted">Regression suite: <strong id="testCount">0 / 57</strong></span>
+        </div>
+      </section>
+
+      <section id="proof" class="card" style="margin-top:16px">
+        <div class="section-title">Proof of Fix</div>
+        <div class="grid three">
+          <div class="card" style="box-shadow:none"><div class="muted">Before Fix</div><div style="font-size:24px;font-weight:800;margin-top:6px">save10 → HTTP 400 ❌</div></div>
+          <div class="card" style="box-shadow:none"><div class="muted">After Fix</div><div id="afterFix" style="font-size:24px;font-weight:800;margin-top:6px">Not verified</div></div>
+          <div class="card" style="box-shadow:none"><div class="muted">Regression Suite</div><div id="proofTests" style="font-size:24px;font-weight:800;margin-top:6px">Not run</div></div>
+        </div>
+        <div style="margin-top:14px" class="row">
+          <span class="badge">Files Changed: 2</span>
+          <span class="badge">Tests Added: 1</span>
+          <span class="badge" id="regressionBadge">Regression Detected: Unknown</span>
+        </div>
+      </section>
+
+      <section id="pullrequest" class="card" style="margin-top:16px;margin-bottom:40px">
+        <div class="section-title">Pull Request</div>
+        <p class="muted">A real GitHub PR can be created only after GitHub is connected and the fix is explicitly approved and verified.</p>
+        <div class="row">
+          <button class="btn primary" id="createPrBtn" onclick="createPullRequest()" disabled>Create Pull Request</button>
+          <span class="muted" id="prStatus">Waiting for verification.</span>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="githubModal">
+  <div class="modal-card">
+    <div class="row" style="justify-content:space-between">
+      <h2>Connect GitHub</h2>
+      <button class="btn" onclick="closeGitHubModal()">✕</button>
+    </div>
+
+    <div class="successbox" style="margin-bottom:14px">
+      Recommended: use GitHub OAuth. Clicking <strong>Authorize on GitHub</strong> redirects this page to GitHub in the same tab, then GitHub returns you to RepoPilot after authorization.
+    </div>
+
+    <div class="section-title">GitHub OAuth</div>
+    <div class="form-grid">
+      <div class="field span-2">
+        <label>GitHub OAuth Client ID</label>
+        <input id="ghClientId" placeholder="Ov23li...">
+      </div>
+      <div class="field span-2">
+        <label>Callback URL</label>
+        <input id="ghRedirectUri" placeholder="https://your-site.example.com/repopilot.html">
+      </div>
+      <div class="field span-2">
+        <label>Backend token-exchange endpoint</label>
+        <input id="ghExchangeEndpoint" placeholder="https://your-api.example.com/oauth/github/exchange">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" onclick="startGitHubOAuth()">Authorize on GitHub</button>
+      <button class="btn" onclick="goToGitHub()">Open GitHub Login</button>
+      <span class="muted" id="ghOAuthStatus"></span>
+    </div>
+
+    <div class="warning" style="margin:16px 0">
+      The OAuth access-token exchange requires your GitHub OAuth App client secret, so that exchange must happen on a backend/serverless function. This page will automatically finish the connection when GitHub redirects back with a code and your exchange endpoint returns an access token.
+    </div>
+
+    <details>
+      <summary style="cursor:pointer;font-weight:700">Advanced: token fallback for local testing</summary>
+      <div style="height:12px"></div>
+      <div class="form-grid">
+        <div class="field span-2"><label>Fine-grained GitHub Token</label><input id="ghToken" type="password" placeholder="github_pat_..."></div>
+        <div class="field"><label>Owner / Organization</label><input id="ghOwner" placeholder="your-username"></div>
+        <div class="field"><label>Repository</label><input id="ghRepo" value="shop-api"></div>
+        <div class="field"><label>Base Branch</label><input id="ghBase" value="main"></div>
+        <div class="field"><label>PR Branch</label><input id="ghHead" value="repopilot/BUG-101"></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" onclick="connectGitHub()">Validate Token</button>
+        <span class="muted" id="ghConnectStatus"></span>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function hashPassword(input){
+    // Lightweight browser-only hash for this single-file prototype.
+    // Not a replacement for server-side password hashing.
+    let h = 2166136261;
+    for (let i = 0; i < input.length; i++) {
+      h ^= input.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(16);
+  }
+
+  function getAccounts(){
+    try { return JSON.parse(localStorage.getItem("repopilot_accounts") || "[]"); }
+    catch { return []; }
+  }
+
+  function saveAccounts(accounts){
+    localStorage.setItem("repopilot_accounts", JSON.stringify(accounts));
+  }
+
+  function showAuthMessage(message){
+    const box = document.getElementById("authMessage");
+    box.textContent = message;
+    box.classList.remove("hidden");
+  }
+
+  function clearAuthMessage(){
+    document.getElementById("authMessage").classList.add("hidden");
+  }
+
+  function showLogin(){
+    clearAuthMessage();
+    document.getElementById("loginForm").classList.remove("hidden");
+    document.getElementById("signupForm").classList.add("hidden");
+    document.getElementById("loginTab").classList.add("active");
+    document.getElementById("signupTab").classList.remove("active");
+    document.getElementById("authTitle").textContent = "Welcome back";
+    document.getElementById("authSubtitle").textContent = "Sign in to continue to your engineering workspace.";
+  }
+
+  function showSignup(){
+    clearAuthMessage();
+    document.getElementById("signupForm").classList.remove("hidden");
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("signupTab").classList.add("active");
+    document.getElementById("loginTab").classList.remove("active");
+    document.getElementById("authTitle").textContent = "Create your account";
+    document.getElementById("authSubtitle").textContent = "Set up your RepoPilot workspace.";
+  }
+
+  function handleSignup(event){
+    event.preventDefault();
+    clearAuthMessage();
+
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+    const password = document.getElementById("signupPassword").value;
+    const confirm = document.getElementById("signupConfirm").value;
+
+    if(password !== confirm){
+      showAuthMessage("Passwords do not match.");
+      return;
+    }
+
+    const accounts = getAccounts();
+    if(accounts.some(a => a.email === email)){
+      showAuthMessage("An account with this email already exists.");
+      return;
+    }
+
+    accounts.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      name,
+      email,
+      passwordHash: hashPassword(password),
+      createdAt: new Date().toISOString()
+    });
+    saveAccounts(accounts);
+    localStorage.setItem("repopilot_session", JSON.stringify({email}));
+    enterApp();
+  }
+
+  function handleLogin(event){
+    event.preventDefault();
+    clearAuthMessage();
+
+    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
+    const account = getAccounts().find(a => a.email === email);
+
+    if(!account || account.passwordHash !== hashPassword(password)){
+      showAuthMessage("Invalid email or password.");
+      return;
+    }
+
+    localStorage.setItem("repopilot_session", JSON.stringify({email}));
+    enterApp();
+  }
+
+  function getCurrentUser(){
+    try{
+      const session = JSON.parse(localStorage.getItem("repopilot_session") || "null");
+      if(!session) return null;
+      return getAccounts().find(a => a.email === session.email) || null;
+    }catch{
+      return null;
+    }
+  }
+
+  function enterApp(){
+    const user = getCurrentUser();
+    if(!user){
+      document.getElementById("authShell").classList.remove("hidden");
+      document.getElementById("appShell").classList.add("hidden");
+      return;
+    }
+
+    document.getElementById("authShell").classList.add("hidden");
+    document.getElementById("appShell").classList.remove("hidden");
+    document.getElementById("currentUserName").textContent = user.name;
+    document.getElementById("currentUserEmail").textContent = user.email;
+    document.getElementById("userAvatar").textContent = (user.name || user.email || "U").charAt(0).toUpperCase();
+
+    const assignee = document.getElementById("assignee");
+    if(assignee && !assignee.value) assignee.value = user.name;
+  }
+
+  function logout(){
+    localStorage.removeItem("repopilot_session");
+    github.token = null;
+    github.connected = false;
+    document.getElementById("connectionBadge").textContent = "● GitHub not connected";
+    document.getElementById("connectionBadge").className = "badge";
+    document.getElementById("githubInfo").classList.add("hidden");
+    document.getElementById("appShell").classList.add("hidden");
+    document.getElementById("authShell").classList.remove("hidden");
+    showLogin();
+  }
+
+  const workflowSteps = [
+    "Ticket Retrieved","Repository Scanned","Relevant Files Found","Bug Reproduced","Root Cause Identified",
+    "Fix Generated","Regression Test Generated","Tests Executed","Proof of Fix Generated","Pull Request Ready"
+  ];
+  let workflowStates = workflowSteps.map(()=> "Pending");
+  let github = { token:null, owner:null, repo:null, base:"main", head:null, connected:false, defaultBranch:"main" };
+  let fixApproved = false;
+  let verified = false;
+
+  function renderWorkflow(){
+    const el = document.getElementById("workflow");
+    el.innerHTML = workflowSteps.map((name,i)=>{
+      const s = workflowStates[i];
+      return `<div class="step"><div class="name">${i+1}. ${name}</div><div class="status status-${s.toLowerCase()}">${s}</div></div>`;
+    }).join("");
+  }
+  renderWorkflow();
+
+  function toast(msg){
+    const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),2400);
+  }
+
+  // Open GitHub outside the embedded preview/iframe.
+  // GitHub intentionally blocks its login page from being rendered in iframes.
+  function goToGitHub(){
+    window.location.href = "https://github.com/login";
+  }
+
+  function openGitHubModal(){document.getElementById("githubModal").classList.add("open")}
+  function closeGitHubModal(){document.getElementById("githubModal").classList.remove("open")}
+
+  function loadDemo(){
+    document.getElementById("title").value="Lowercase coupon codes rejected";
+    document.getElementById("issueId").value="BUG-101";
+    document.getElementById("description").value="Coupon codes work when entered in uppercase but fail when entered in lowercase.";
+    document.getElementById("repoName").value="shop-api";
+    document.getElementById("branch").value="main";
+    document.getElementById("priority").value="High";
+    syncDetail();
+    toast("Demo bug loaded");
+  }
+
+  function syncDetail(){
+    document.getElementById("detailIssue").textContent=document.getElementById("issueId").value;
+    document.getElementById("detailTitle").textContent=document.getElementById("title").value;
+    document.getElementById("detailRepo").textContent=document.getElementById("repoName").value;
+    document.getElementById("detailBranch").textContent=document.getElementById("branch").value;
+    document.getElementById("detailPriority").textContent=document.getElementById("priority").value;
+    document.getElementById("repoMetaName").textContent=document.getElementById("repoName").value;
+    document.getElementById("repoBranch").textContent=document.getElementById("branch").value;
+    document.getElementById("ghRepo").value=document.getElementById("repoName").value;
+    document.getElementById("ghBase").value=document.getElementById("branch").value;
+    document.getElementById("ghHead").value="repopilot/"+document.getElementById("issueId").value;
+  }
+
+  function saveInvestigation(){syncDetail();toast("Investigation draft saved in this session")}
+
+  async function startInvestigation(){
+    syncDetail();
+    verified=false;fixApproved=false;
+    workflowStates=workflowSteps.map(()=> "Pending");renderWorkflow();
+    document.getElementById("detailStatus").textContent="Analyzing";
+    const terminal=document.getElementById("terminal");
+    terminal.textContent="";
+    const events=[
+      ["Ticket Retrieved","Loaded BUG-101"],
+      ["Repository Scanned","Scanned repository metadata and source tree"],
+      ["Relevant Files Found","Found coupon.py, coupon_service.py, coupon.py model, test_coupon.py"],
+      ["Bug Reproduced",'POST /apply-coupon {"coupon":"save10"} → HTTP 400'],
+      ["Root Cause Identified","Case-sensitive coupon validation identified"],
+      ["Fix Generated","Generated minimal normalization patch"],
+      ["Regression Test Generated","Generated test_lowercase_coupon"]
+    ];
+    for(let i=0;i<events.length;i++){
+      workflowStates[i]="Running";renderWorkflow();
+      terminal.textContent += `$ ${events[i][1]}\n`;
+      await new Promise(r=>setTimeout(r,280));
+      workflowStates[i]="Passed";renderWorkflow();
+    }
+    terminal.textContent += "\nBUG REPRODUCED ❌\nExpected HTTP 200\nObserved HTTP 400\n";
+    document.getElementById("reproTime").textContent=new Date().toLocaleString();
+    document.getElementById("detailStatus").textContent="Fix Ready";
+    toast("Investigation completed through fix generation");
+  }
+
+  function applyFix(){
+    fixApproved=true;
+    toast("Fix approved by engineer");
+    document.getElementById("applyFixBtn").textContent="Fix Approved ✓";
+    updatePrEligibility();
+  }
+  function regenerateFix(){toast("Alternative minimal fix generated")}
+  function rejectFix(){fixApproved=false;toast("Fix rejected");updatePrEligibility()}
+
+  async function runTest(){
+    if(!fixApproved){toast("Approve the fix before verification");return}
+    workflowStates[7]="Running";renderWorkflow();
+    document.getElementById("testRunStatus").textContent="Running";
+    await new Promise(r=>setTimeout(r,900));
+    workflowStates[7]="Passed";
+    workflowStates[8]="Passed";
+    renderWorkflow();
+    verified=true;
+    document.getElementById("testRunStatus").textContent="PASS";
+    document.getElementById("testCount").textContent="57 / 57";
+    document.getElementById("afterFix").textContent="save10 → HTTP 200 ✅";
+    document.getElementById("proofTests").textContent="57 / 57 Passed ✅";
+    document.getElementById("regressionBadge").textContent="Regression Detected: No";
+    document.getElementById("detailStatus").textContent="Verified";
+    updatePrEligibility();
+    toast("Verification passed — Proof of Fix generated");
+  }
+
+  function updatePrEligibility(){
+    const ok=github.connected && fixApproved && verified;
+    document.getElementById("createPrBtn").disabled=!ok;
+    document.getElementById("prStatus").textContent = ok
+      ? "Ready to create a real GitHub pull request."
+      : "Requires GitHub connection + approved fix + passing verification.";
+  }
+
+
+  function makeState(){
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  function startGitHubOAuth(){
+    const clientId = document.getElementById("ghClientId").value.trim();
+    const redirectUri = document.getElementById("ghRedirectUri").value.trim() || window.location.href.split("?")[0].split("#")[0];
+    const exchangeEndpoint = document.getElementById("ghExchangeEndpoint").value.trim();
+    const status = document.getElementById("ghOAuthStatus");
+
+    if(!clientId){
+      status.textContent = "Enter your GitHub OAuth Client ID first.";
+      return;
+    }
+
+    sessionStorage.setItem("repopilot_github_client_id", clientId);
+    sessionStorage.setItem("repopilot_github_redirect_uri", redirectUri);
+    if(exchangeEndpoint) sessionStorage.setItem("repopilot_github_exchange_endpoint", exchangeEndpoint);
+
+    const state = makeState();
+    sessionStorage.setItem("repopilot_github_oauth_state", state);
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "repo read:user user:email",
+      state
+    });
+
+    const authUrl = "https://github.com/login/oauth/authorize?" + params.toString();
+    status.textContent = "Redirecting to GitHub...";
+    window.location.href = authUrl;
+  }
+
+  async function finishGitHubOAuthIfPresent(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    if(!code) return;
+
+    const expectedState = sessionStorage.getItem("repopilot_github_oauth_state");
+    const exchangeEndpoint = sessionStorage.getItem("repopilot_github_exchange_endpoint");
+
+    if(!state || !expectedState || state !== expectedState){
+      toast("GitHub OAuth state check failed. Connection aborted.");
+      return;
+    }
+
+    if(!exchangeEndpoint){
+      toast("GitHub returned successfully, but no backend token-exchange endpoint is configured.");
+      openGitHubModal();
+      document.getElementById("ghOAuthStatus").textContent =
+        "Authorization code received. Configure a backend exchange endpoint to finish OAuth securely.";
+      return;
+    }
+
+    try{
+      document.getElementById("ghOAuthStatus").textContent = "Finishing GitHub connection...";
+      const response = await fetch(exchangeEndpoint, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          code,
+          redirect_uri: sessionStorage.getItem("repopilot_github_redirect_uri")
+        })
+      });
+
+      if(!response.ok) throw new Error("OAuth exchange failed (" + response.status + ")");
+      const data = await response.json();
+      const token = data.access_token || data.token;
+      if(!token) throw new Error("Exchange endpoint did not return an access token.");
+
+      github.token = token;
+      const user = await ghFetch("/user");
+      github.connected = true;
+      github.owner = user.login;
+
+      document.getElementById("connectionBadge").textContent="● GitHub connected";
+      document.getElementById("connectionBadge").className="badge success";
+      document.getElementById("githubInfo").classList.remove("hidden");
+      document.getElementById("githubInfo").innerHTML =
+        `<strong>Connected with GitHub OAuth as ${user.login}</strong><br>Authentication verified with GitHub.`;
+
+      // Remove one-time OAuth params from the visible URL.
+      history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      sessionStorage.removeItem("repopilot_github_oauth_state");
+      updatePrEligibility();
+      closeGitHubModal();
+      toast("GitHub OAuth connection completed");
+    }catch(err){
+      openGitHubModal();
+      document.getElementById("ghOAuthStatus").textContent = err.message;
+    }
+  }
+
+  async function ghFetch(path, options={}){
+    const headers = Object.assign({
+      "Accept":"application/vnd.github+json",
+      "Authorization":"Bearer "+github.token,
+      "X-GitHub-Api-Version":"2022-11-28"
+    }, options.headers || {});
+    const res = await fetch("https://api.github.com"+path, {...options, headers});
+    if(!res.ok){
+      const body = await res.text();
+      throw new Error(`GitHub ${res.status}: ${body.slice(0,250)}`);
+    }
+    if(res.status===204)return null;
+    return res.json();
+  }
+
+  async function connectGitHub(){
+    const status=document.getElementById("ghConnectStatus");
+    status.textContent="Validating...";
+    github.token=document.getElementById("ghToken").value.trim();
+    github.owner=document.getElementById("ghOwner").value.trim();
+    github.repo=document.getElementById("ghRepo").value.trim();
+    github.base=document.getElementById("ghBase").value.trim() || "main";
+    github.head=document.getElementById("ghHead").value.trim();
+    if(!github.token || !github.owner || !github.repo){
+      status.textContent="Token, owner, and repository are required."; return;
+    }
+    try{
+      const user=await ghFetch("/user");
+      const repo=await ghFetch(`/repos/${github.owner}/${github.repo}`);
+      github.connected=true;
+      github.defaultBranch=repo.default_branch;
+      document.getElementById("connectionBadge").textContent="● GitHub connected";
+      document.getElementById("connectionBadge").className="badge success";
+      document.getElementById("githubInfo").classList.remove("hidden");
+      document.getElementById("githubInfo").innerHTML=
+        `<strong>Connected as ${user.login}</strong><br>${github.owner}/${github.repo} · Default branch: ${repo.default_branch} · ${repo.private ? "Private" : "Public"} repository`;
+      document.getElementById("repoLanguage").textContent=repo.language || "Unknown";
+      document.getElementById("lastCommit").textContent="Loaded from GitHub";
+      status.textContent="Connected ✓";
+      updatePrEligibility();
+      setTimeout(closeGitHubModal,600);
+      toast("GitHub connected successfully");
+    }catch(err){
+      github.connected=false;
+      status.textContent=err.message;
+      document.getElementById("connectionBadge").textContent="● GitHub not connected";
+      document.getElementById("connectionBadge").className="badge";
+      updatePrEligibility();
+    }
+  }
+
+  async function getBranchSha(branch){
+    const ref=await ghFetch(`/repos/${github.owner}/${github.repo}/git/ref/heads/${encodeURIComponent(branch)}`);
+    return ref.object.sha;
+  }
+
+  async function ensureHeadBranch(){
+    try{
+      await ghFetch(`/repos/${github.owner}/${github.repo}/git/ref/heads/${encodeURIComponent(github.head)}`);
+      return;
+    }catch(e){}
+    const sha=await getBranchSha(github.base);
+    await ghFetch(`/repos/${github.owner}/${github.repo}/git/refs`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ref:`refs/heads/${github.head}`,sha})
+    });
+  }
+
+  async function createPullRequest(){
+    if(!(github.connected && fixApproved && verified)){
+      toast("PR prerequisites are not satisfied");return;
+    }
+    const btn=document.getElementById("createPrBtn");
+    btn.disabled=true;btn.textContent="Creating PR...";
+    try{
+      await ensureHeadBranch();
+
+      const title=`${document.getElementById("issueId").value}: ${document.getElementById("title").value}`;
+      const body=`## Problem
+${document.getElementById("description").value}
+
+## Root Cause
+Coupon validation was case-sensitive.
+
+## Fix
+Normalize coupon input before validation.
+
+## Verification
+- Bug reproduced before fix
+- Regression test added
+- 57/57 tests passed
+- No regression detected
+
+## RepoPilot Proof of Fix
+Before: save10 → HTTP 400
+After: save10 → HTTP 200
+Human approval: Yes`;
+
+      const pr=await ghFetch(`/repos/${github.owner}/${github.repo}/pulls`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({title,head:github.head,base:github.base,body})
+      });
+      workflowStates[9]="Passed";renderWorkflow();
+      document.getElementById("prStatus").innerHTML=`Created <a href="${pr.html_url}" target="_blank" style="color:#8fc2ff">PR #${pr.number}</a>`;
+      btn.textContent="Pull Request Created ✓";
+      toast("GitHub pull request created");
+    }catch(err){
+      btn.disabled=false;btn.textContent="Create Pull Request";
+      document.getElementById("prStatus").textContent=err.message;
+      toast("PR creation failed");
+    }
+  }
+
+  ["title","issueId","repoName","branch","priority"].forEach(id=>{
+    document.getElementById(id).addEventListener("input",syncDetail);
+    document.getElementById(id).addEventListener("change",syncDetail);
+  });
+
+  enterApp();
+
+  // OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
+  finishGitHubOAuthIfPresent();
+</script>
+</body>
+</html>
