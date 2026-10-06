@@ -173,6 +173,16 @@
       .github-grid{grid-template-columns:1fr}
     }
 
+
+    .mode-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .evidence-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .evidence-item{border:1px solid var(--line);background:#0b1219;border-radius:10px;padding:11px}
+    .evidence-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;color:#a9d3ff}
+    .snippet{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;white-space:pre-wrap;background:#070b10;border-radius:8px;padding:10px;margin-top:8px;max-height:180px;overflow:auto}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block}
+    .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:760px){.config-grid{grid-template-columns:1fr}}
+
     @media (max-width:1100px){
       .stats{grid-template-columns:repeat(2,1fr)}
       .two,.three{grid-template-columns:1fr}
@@ -336,7 +346,28 @@
         </div>
       </section>
 
-      <section id="settings" class="card" style="margin-top:16px">
+      
+      <section class="card" style="margin-top:16px">
+        <div class="section-title">RepoPilot Runtime</div>
+        <div class="muted">GitHub repository scanning works directly after GitHub is connected. Optional backend endpoints enable AI patch generation and real test execution.</div>
+        <div class="config-grid" style="margin-top:12px">
+          <div class="field">
+            <label>AI Analysis Endpoint (optional)</label>
+            <input id="aiEndpoint" placeholder="https://your-api.example.com/repopilot/analyze" onchange="saveRuntimeConfig()">
+          </div>
+          <div class="field">
+            <label>Test Runner Endpoint (optional)</label>
+            <input id="runnerEndpoint" placeholder="https://your-api.example.com/repopilot/run-tests" onchange="saveRuntimeConfig()">
+          </div>
+        </div>
+        <div class="mode-strip">
+          <span class="badge success"><span class="live-dot"></span> GitHub repository analysis: Live</span>
+          <span class="badge" id="aiModeBadge">AI patch generation: Local evidence mode</span>
+          <span class="badge" id="runnerModeBadge">Test execution: Runner not configured</span>
+        </div>
+      </section>
+
+<section id="settings" class="card" style="margin-top:16px">
         <div class="successbox" style="margin-bottom:14px">
           <strong>Supabase Auth Connected</strong><br>
           Project: ttwwzlljaxiflpjvdpez.supabase.co
@@ -347,11 +378,17 @@
             <div class="muted">Connect a GitHub repository, validate access, load metadata, and create a real pull request after human approval.</div>
           </div>
           <div class="row">
-            <button class="btn" onclick="goToGitHub()">Open GitHub</button>
+            <button class="btn" onclick="connectGithubWithSupabase()">Reconnect GitHub</button>
             <button class="btn primary" onclick="openGitHubModal()">Connect with OAuth</button>
           </div>
         </div>
         <div id="githubInfo" class="successbox hidden" style="margin-top:14px"></div>
+        <div class="warning" style="margin-top:14px">
+          GitHub OAuth setup required: in your GitHub OAuth App, set the Authorization callback URL to
+          <strong>https://ttwwzlljaxiflpjvdpez.supabase.co/auth/v1/callback</strong>.
+          In Supabase Dashboard → Authentication → Providers → GitHub, enable GitHub and add your GitHub Client ID and Client Secret.
+        </div>
+
         <div id="githubAccountCard" class="card hidden" style="margin-top:14px;box-shadow:none">
           <div class="row" style="justify-content:space-between">
             <div class="row">
@@ -365,7 +402,7 @@
           </div>
         </div>
         <div class="warning" style="margin-top:14px">
-          GitHub login cannot be displayed inside an embedded preview, so RepoPilot now redirects the current tab directly to GitHub for authorization. For a complete OAuth connection, configure a GitHub OAuth App and a small backend token-exchange endpoint; the client secret must never be placed in this HTML file.
+          RepoPilot uses Supabase GitHub OAuth. After GitHub authorization, you are redirected back to RepoPilot automatically. For a complete OAuth connection, configure a GitHub OAuth App and a small backend token-exchange endpoint; the client secret must never be placed in this HTML file.
         </div>
       </section>
 
@@ -446,16 +483,16 @@
       <section class="grid two" style="margin-top:16px">
         <div class="card">
           <div class="section-title">AI Investigation</div>
-          <div class="muted" id="aiInvestigationEmpty">Start an investigation to see AI findings, affected components, and supporting evidence.</div>
+          <div id="aiInvestigationEmpty"><div class="muted">Start an investigation to see live repository findings and supporting evidence.</div></div>
         </div>
         <div class="card">
           <div class="section-title">Root Cause</div>
-          <div class="muted" id="rootCauseEmpty">Root-cause analysis will appear here after the bug is reproduced.</div>
+          <div id="rootCauseEmpty"><div class="muted">Root-cause hypothesis will appear here after repository analysis.</div></div>
         </div>
       </section>
 
       <section class="card" style="margin-top:16px">
-        <div class="section-title">Bug Reproduction</div>
+        <div class="section-title">Bug Reproduction</div><div class="muted" id="reproModeNote" style="margin-bottom:10px">RepoPilot will generate a reproduction plan. Real execution requires a configured Test Runner endpoint.</div>
         <div class="grid two">
           <div>
             <table class="table">
@@ -496,14 +533,14 @@
         <div class="section-title">Test Run</div>
         <div class="row">
           <span class="badge" id="testRunStatus">Not run</span>
-          <span class="muted">Regression suite: <strong id="testCount">0 / 57</strong></span>
+          <span class="muted">Regression suite: <strong id="testCount">Not executed</strong></span><span class="badge" id="executionEvidence">Execution evidence: None</span>
         </div>
       </section>
 
       <section id="proof" class="card" style="margin-top:16px">
         <div class="section-title">Proof of Fix</div>
         <div class="grid three">
-          <div class="card" style="box-shadow:none"><div class="muted">Before Fix</div><div style="font-size:24px;font-weight:800;margin-top:6px">Not available</div></div>
+          <div class="card" style="box-shadow:none"><div class="muted">Before Fix</div><div id="beforeFix" style="font-size:24px;font-weight:800;margin-top:6px">Not available</div></div>
           <div class="card" style="box-shadow:none"><div class="muted">After Fix</div><div id="afterFix" style="font-size:24px;font-weight:800;margin-top:6px">Not available</div></div>
           <div class="card" style="box-shadow:none"><div class="muted">Regression Suite</div><div id="proofTests" style="font-size:24px;font-weight:800;margin-top:6px">Not run</div></div>
         </div>
@@ -534,7 +571,7 @@
     </div>
 
     <div class="successbox" style="margin-bottom:14px">
-      Recommended: use GitHub OAuth. Clicking <strong>Authorize on GitHub</strong> redirects this page to GitHub in the same tab, then GitHub returns you to RepoPilot after authorization.
+      Recommended: use GitHub OAuth. Clicking <strong>Authorize with GitHub</strong> uses Supabase OAuth. GitHub will ask for permission, then return you to RepoPilot automatically.
     </div>
 
     <div class="section-title">GitHub OAuth</div>
@@ -554,7 +591,7 @@
     </div>
 
     <div class="row" style="margin-top:14px">
-      <button class="btn primary" onclick="startGitHubOAuth()">Authorize on GitHub</button>
+      <button class="btn primary" onclick="connectGithubWithSupabase()">Authorize with GitHub</button>
       <button class="btn" onclick="goToGitHub()">Open GitHub Login</button>
       <span class="muted" id="ghOAuthStatus"></span>
     </div>
@@ -779,6 +816,125 @@
   let activeGitHubTab = "branches";
   let fixApproved = false;
   let verified = false;
+  let investigationContext = {
+    repo: null,
+    branch: null,
+    issue: null,
+    repoTree: [],
+    relevantFiles: [],
+    sourceFiles: [],
+    analysis: null,
+    proposedFix: null,
+    proposedTest: null,
+    execution: null
+  };
+
+  function saveRuntimeConfig(){
+    const cfg = {
+      aiEndpoint: document.getElementById("aiEndpoint")?.value.trim() || "",
+      runnerEndpoint: document.getElementById("runnerEndpoint")?.value.trim() || ""
+    };
+    sessionStorage.setItem("repopilot_runtime_config", JSON.stringify(cfg));
+    refreshRuntimeBadges();
+  }
+
+  function loadRuntimeConfig(){
+    try{
+      const cfg = JSON.parse(sessionStorage.getItem("repopilot_runtime_config") || "{}");
+      if(document.getElementById("aiEndpoint")) document.getElementById("aiEndpoint").value = cfg.aiEndpoint || "";
+      if(document.getElementById("runnerEndpoint")) document.getElementById("runnerEndpoint").value = cfg.runnerEndpoint || "";
+    }catch{}
+    refreshRuntimeBadges();
+  }
+
+  function getRuntimeConfig(){
+    return {
+      aiEndpoint: document.getElementById("aiEndpoint")?.value.trim() || "",
+      runnerEndpoint: document.getElementById("runnerEndpoint")?.value.trim() || ""
+    };
+  }
+
+  function refreshRuntimeBadges(){
+    const cfg = getRuntimeConfig();
+    const ai = document.getElementById("aiModeBadge");
+    const runner = document.getElementById("runnerModeBadge");
+    if(ai) ai.textContent = cfg.aiEndpoint ? "AI patch generation: Backend configured" : "AI patch generation: Local evidence mode";
+    if(runner) runner.textContent = cfg.runnerEndpoint ? "Test execution: Runner configured" : "Test execution: Runner not configured";
+  }
+
+  function decodeBase64Utf8(input){
+    try{
+      const bin = atob((input || "").replace(/\n/g,""));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      return new TextDecoder("utf-8",{fatal:false}).decode(bytes);
+    }catch{return "";}
+  }
+
+  function issueTokens(text){
+    const stop = new Set(["the","and","for","with","from","this","that","when","then","into","does","not","are","was","were","have","has","but","can","will","should","error","issue","bug"]);
+    return [...new Set((text || "").toLowerCase().match(/[a-z0-9_]{3,}/g) || [])]
+      .filter(t => !stop.has(t)).slice(0,30);
+  }
+
+  function fileExtAllowed(path){
+    return /\.(py|js|jsx|ts|tsx|java|go|rb|php|cs|cpp|c|h|rs|swift|kt|kts|json|yml|yaml|toml|xml|sql|html|css|scss)$/i.test(path);
+  }
+
+  function scorePath(path,tokens){
+    const p = path.toLowerCase();
+    let score = 0;
+    for(const t of tokens) if(p.includes(t)) score += 6;
+    if(/test|spec/i.test(path)) score += 1;
+    if(/src|app|lib|service|controller|route|api/i.test(path)) score += 1;
+    return score;
+  }
+
+  function scoreContent(content,tokens){
+    const c = (content || "").toLowerCase();
+    let score = 0;
+    for(const t of tokens){
+      const m = c.match(new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"));
+      if(m) score += Math.min(m.length,6) * 2;
+    }
+    return score;
+  }
+
+  function evidenceSnippet(content,tokens){
+    const lines = (content || "").split(/\r?\n/);
+    let best = 0, bestScore = -1;
+    for(let i=0;i<lines.length;i++){
+      const l = lines[i].toLowerCase();
+      let s = 0;
+      for(const t of tokens) if(l.includes(t)) s++;
+      if(s > bestScore){bestScore=s;best=i;}
+    }
+    const start = Math.max(0,best-3), end = Math.min(lines.length,best+5);
+    return lines.slice(start,end).join("\n").slice(0,1400);
+  }
+
+  function inferTestCommand(paths){
+    const p = paths.join("\n").toLowerCase();
+    if(p.includes("pytest") || p.includes("requirements.txt") || p.includes("pyproject.toml")) return "pytest -q";
+    if(p.includes("package.json")) return "npm test -- --runInBand";
+    if(p.includes("pom.xml")) return "mvn test";
+    if(p.includes("build.gradle")) return "./gradlew test";
+    if(p.includes("go.mod")) return "go test ./...";
+    if(p.includes("cargo.toml")) return "cargo test";
+    return "Run the repository's configured test command";
+  }
+
+  function genericRegressionTest(repoLanguage,title){
+    const lang = (repoLanguage || "").toLowerCase();
+    if(lang === "python"){
+      return `def test_regression_issue():\n    # Arrange the input described in: ${title}\n    # Act: call the affected function/endpoint\n    # Assert: verify expected behavior and prevent recurrence\n    assert True  # replace with the repository-specific assertion`;
+    }
+    if(["javascript","typescript"].includes(lang)){
+      return `test("regression: ${title.replace(/"/g,"'")}", async () => {\n  // Arrange the failing input\n  // Act on the affected function/endpoint\n  // Assert expected behavior\n  expect(true).toBe(true); // replace with repository-specific assertion\n});`;
+    }
+    return `Regression test plan:\n1. Reproduce: ${title}\n2. Assert the expected behavior from the issue.\n3. Add a negative/boundary case.\n4. Run the full regression suite.`;
+  }
+
+
 
   function renderWorkflow(){
     const el = document.getElementById("workflow");
@@ -826,95 +982,332 @@
 
   function saveInvestigation(){syncDetail();toast("Investigation draft saved in this session")}
 
+
+  async function fetchRepoTree(owner, repo, branch){
+    // Get branch SHA, then recursively load the repository tree.
+    const ref = await ghFetch(`/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch)}`);
+    const commit = await ghFetch(`/repos/${owner}/${repo}/git/commits/${ref.object.sha}`);
+    const tree = await ghFetch(`/repos/${owner}/${repo}/git/trees/${commit.tree.sha}?recursive=1`);
+    return (tree.tree || []).filter(x => x.type === "blob");
+  }
+
+  async function fetchTextFile(owner, repo, path, branch){
+    const data = await ghFetch(`/repos/${owner}/${repo}/contents/${encodeURIComponent(path).replace(/%2F/g,"/")}?ref=${encodeURIComponent(branch)}`);
+    if(data.type !== "file" || !data.content) return "";
+    return decodeBase64Utf8(data.content);
+  }
+
+  async function runLiveRepositoryAnalysis(repoFullName, branch, title, description){
+    const [owner, repo] = repoFullName.includes("/") ? repoFullName.split("/",2) : [github.owner, repoFullName];
+    if(!owner || !repo) throw new Error("Repository owner/name is unavailable.");
+
+    const tokens = issueTokens(`${title} ${description}`);
+    const tree = await fetchRepoTree(owner, repo, branch);
+    const codeFiles = tree.filter(x => fileExtAllowed(x.path) && x.size < 250000);
+
+    const rankedPaths = codeFiles
+      .map(x => ({...x, pathScore:scorePath(x.path,tokens)}))
+      .sort((a,b)=>b.pathScore-a.pathScore);
+
+    // Fetch a bounded set to stay within GitHub API limits.
+    const candidates = rankedPaths.slice(0, Math.min(18, rankedPaths.length));
+    const fetched = [];
+    for(const f of candidates){
+      try{
+        const content = await fetchTextFile(owner,repo,f.path,branch);
+        const totalScore = f.pathScore + scoreContent(content,tokens);
+        fetched.push({path:f.path,sha:f.sha,size:f.size,content,totalScore,snippet:evidenceSnippet(content,tokens)});
+      }catch{}
+    }
+    fetched.sort((a,b)=>b.totalScore-a.totalScore);
+    const relevant = fetched.filter(x=>x.totalScore>0).slice(0,8);
+    return {owner,repo,tokens,tree,codeFiles,relevant: relevant.length ? relevant : fetched.slice(0,5)};
+  }
+
+  async function callAIEndpoint(payload){
+    const { aiEndpoint } = getRuntimeConfig();
+    if(!aiEndpoint) return null;
+    const res = await fetch(aiEndpoint,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error(`AI endpoint failed (${res.status})`);
+    return await res.json();
+  }
+
+  function buildLocalAnalysis(live,title,description){
+    const primary = live.relevant[0];
+    const files = live.relevant.map(x=>x.path);
+    return {
+      summary: primary
+        ? `The strongest repository match is ${primary.path}. RepoPilot ranked it using issue keywords found in the file path and source content.`
+        : "No strong source-code match was found from the issue text.",
+      rootCause: primary
+        ? `Likely affected area: ${primary.path}. This is a hypothesis based on repository evidence, not a confirmed root cause until the issue is reproduced.`
+        : "Root cause is not yet established.",
+      confidence: primary ? Math.min(92,45 + primary.totalScore*3) : 20,
+      reproduction: {
+        command: inferTestCommand(live.tree.map(x=>x.path)),
+        request: `Reproduce the behavior described by: ${title}`,
+        expected: "Expected behavior described in the issue",
+        actual: "Must be captured by a real test runner"
+      },
+      proposedFix: primary
+        ? `Review ${primary.path} around the matching evidence and make the smallest change that corrects the reported behavior. RepoPilot will not invent an unverified line-level patch without an AI backend.`
+        : "No patch proposed.",
+      regressionTest: genericRegressionTest(selectedGitHubRepo?.language,title),
+      files
+    };
+  }
+
+  function renderLiveAnalysis(live,analysis){
+    document.getElementById("fileCount").textContent = live.tree.length;
+    document.getElementById("relevantCount").textContent = live.relevant.length;
+    document.getElementById("repoLanguage").textContent = selectedGitHubRepo?.language || "Unknown";
+    document.getElementById("lastCommit").textContent =
+      selectedGitHubRepoData.commits?.[0]?.commit?.author?.date
+        ? new Date(selectedGitHubRepoData.commits[0].commit.author.date).toLocaleString()
+        : "Loaded from GitHub";
+
+    const fileTree = document.getElementById("fileTree");
+    fileTree.innerHTML = live.relevant.length
+      ? live.relevant.map(f=>`<div class="hot">${escapeHtml(f.path)}</div>`).join("")
+      : '<span class="muted">No strong file matches found.</span>';
+
+    const evidence = live.relevant.map(f=>`
+      <div class="evidence-item">
+        <div class="evidence-path">${escapeHtml(f.path)}</div>
+        <div class="muted">Relevance score: ${f.totalScore}</div>
+        <div class="snippet">${escapeHtml(f.snippet || "No matching source snippet.")}</div>
+      </div>`).join("");
+
+    document.getElementById("aiInvestigationEmpty").innerHTML = `
+      <div><strong>Engineering conclusion:</strong> ${escapeHtml(analysis.summary)}</div>
+      <div class="mode-strip"><span class="badge success">Live GitHub evidence</span><span class="badge">Relevant files: ${live.relevant.length}</span></div>
+      <div class="evidence-list">${evidence || '<div class="muted">No source evidence available.</div>'}</div>`;
+
+    document.getElementById("rootCauseEmpty").innerHTML = `
+      <div><strong>Hypothesis:</strong> ${escapeHtml(analysis.rootCause)}</div>
+      <div class="row" style="margin-top:10px">
+        <span class="badge">Confidence: ${analysis.confidence}%</span>
+        <span class="badge warn">Not confirmed until reproduction succeeds</span>
+      </div>`;
+
+    document.getElementById("reproCommand").textContent = analysis.reproduction.command;
+    document.getElementById("reproRequest").textContent = analysis.reproduction.request;
+    document.getElementById("reproExpected").textContent = analysis.reproduction.expected;
+    document.getElementById("reproActual").textContent = analysis.reproduction.actual;
+    document.getElementById("reproTime").textContent = new Date().toLocaleString();
+
+    document.getElementById("fixDiff").innerHTML =
+      `<div class="muted">${escapeHtml(analysis.proposedFix)}</div>`;
+    document.getElementById("generatedTest").textContent = analysis.regressionTest;
+  }
+
   async function startInvestigation(){
     syncDetail();
 
     const issue = document.getElementById("issueId").value.trim();
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
-    const repo = document.getElementById("repoName").value.trim();
+    const repoFull = document.getElementById("repoName").value.trim();
     const branch = document.getElementById("branch").value.trim();
 
-    if(!issue || !title || !description || !repo || !branch){
+    if(!issue || !title || !description || !repoFull || !branch){
       toast("Please complete the required investigation fields.");
       return;
     }
-
-    verified = false;
-    fixApproved = false;
-    workflowStates = workflowSteps.map(()=> "Pending");
-    renderWorkflow();
-    document.getElementById("detailStatus").textContent = "Analyzing";
-
-    const terminal = document.getElementById("terminal");
-    terminal.textContent = "";
-    const events = [
-      ["Ticket Retrieved", `Loaded ${issue}`],
-      ["Repository Scanned", `Scanning ${repo} on branch ${branch}`],
-      ["Relevant Files Found", "Relevant source files identified"],
-      ["Bug Reproduced", "Reproduction step completed"],
-      ["Root Cause Identified", "Likely root cause identified from evidence"],
-      ["Fix Generated", "Minimal fix proposal generated"],
-      ["Regression Test Generated", "Regression test proposal generated"]
-    ];
-
-    for(let i=0;i<events.length;i++){
-      workflowStates[i]="Running";
-      renderWorkflow();
-      terminal.textContent += `$ ${events[i][1]}
-`;
-      await new Promise(r=>setTimeout(r,220));
-      workflowStates[i]="Passed";
-      renderWorkflow();
+    if(!github.connected || !github.token){
+      toast("Connect GitHub before starting a live repository investigation.");
+      return;
     }
 
-    document.getElementById("reproCommand").textContent = "Generated from investigation context";
-    document.getElementById("reproRequest").textContent = "Derived from reported bug";
-    document.getElementById("reproExpected").textContent = "Expected behavior from issue";
-    document.getElementById("reproActual").textContent = "Observed failing behavior";
-    document.getElementById("reproTime").textContent = new Date().toLocaleString();
+    verified=false;
+    fixApproved=false;
+    investigationContext = {repo:repoFull,branch,issue,repoTree:[],relevantFiles:[],sourceFiles:[],analysis:null,proposedFix:null,proposedTest:null,execution:null};
+    workflowStates=workflowSteps.map(()=> "Pending");
+    renderWorkflow();
+    document.getElementById("detailStatus").textContent="Analyzing";
+    document.getElementById("applyFixBtn").disabled=true;
+    document.getElementById("terminal").textContent="";
+    document.getElementById("beforeFix").textContent="Awaiting reproduction";
+    document.getElementById("afterFix").textContent="Not verified";
+    document.getElementById("proofTests").textContent="Not executed";
 
-    document.getElementById("aiInvestigationEmpty").innerHTML =
-      `<strong>Affected area:</strong> determined from repository analysis.<br><span class="muted">Evidence is based on the issue description, relevant files, logs, and tests.</span>`;
-    document.getElementById("rootCauseEmpty").innerHTML =
-      `<strong>Likely root cause identified.</strong><br><span class="muted">Review repository evidence before applying any fix.</span>`;
+    try{
+      workflowStates[0]="Running"; renderWorkflow();
+      document.getElementById("terminal").textContent += `$ Ticket ${issue} loaded
+`;
+      workflowStates[0]="Passed";
 
-    document.getElementById("fixDiff").innerHTML =
-      `<div class="muted">Generated fix preview will be shown here from the connected repository.</div>`;
-    document.getElementById("generatedTest").textContent =
-      "Generated regression test will appear here after repository analysis.";
+      workflowStates[1]="Running"; renderWorkflow();
+      document.getElementById("terminal").textContent += `$ Reading GitHub repository ${repoFull}@${branch}
+`;
 
-    document.getElementById("applyFixBtn").disabled = false;
-    document.getElementById("detailStatus").textContent = "Fix Ready";
-    toast("Investigation created");
+      const live = await runLiveRepositoryAnalysis(repoFull,branch,title,description);
+      investigationContext.repoTree = live.tree;
+      investigationContext.relevantFiles = live.relevant;
+      workflowStates[1]="Passed";
+
+      workflowStates[2]="Passed"; renderWorkflow();
+      document.getElementById("terminal").textContent += `$ Repository tree: ${live.tree.length} files
+$ Relevant source candidates: ${live.relevant.length}
+`;
+
+      let analysis = null;
+      try{
+        analysis = await callAIEndpoint({
+          issue:{id:issue,title,description},
+          repository:{full_name:repoFull,branch,language:selectedGitHubRepo?.language || null},
+          relevant_files: live.relevant.map(f=>({path:f.path,content:f.content.slice(0,12000)}))
+        });
+      }catch(err){
+        document.getElementById("terminal").textContent += `$ AI endpoint unavailable: ${err.message}
+$ Falling back to local evidence analysis
+`;
+      }
+      if(!analysis) analysis = buildLocalAnalysis(live,title,description);
+
+      investigationContext.analysis = analysis;
+      investigationContext.proposedFix = analysis.fix_diff || analysis.proposedFix || null;
+      investigationContext.proposedTest = analysis.regression_test || analysis.regressionTest || null;
+
+      renderLiveAnalysis(live,{
+        summary: analysis.summary || analysis.engineering_summary || "Repository evidence analyzed.",
+        rootCause: analysis.root_cause || analysis.rootCause || "Root cause hypothesis generated from repository evidence.",
+        confidence: analysis.confidence || 65,
+        reproduction: analysis.reproduction || {
+          command: inferTestCommand(live.tree.map(x=>x.path)),
+          request:`Reproduce ${title}`,
+          expected:"Expected behavior from issue",
+          actual:"Requires execution"
+        },
+        proposedFix: analysis.fix_diff || analysis.proposedFix || "Review relevant files and generate a minimal patch.",
+        regressionTest: analysis.regression_test || analysis.regressionTest || genericRegressionTest(selectedGitHubRepo?.language,title)
+      });
+
+      workflowStates[3]="Pending";   // not claim reproduction succeeded
+      workflowStates[4]="Passed";    // hypothesis identified
+      workflowStates[5]=(analysis.fix_diff || analysis.proposedFix) ? "Passed" : "Pending";
+      workflowStates[6]=(analysis.regression_test || analysis.regressionTest) ? "Passed" : "Pending";
+      renderWorkflow();
+
+      document.getElementById("detailStatus").textContent="Analysis Ready";
+      document.getElementById("applyFixBtn").disabled=!(analysis.fix_diff || analysis.proposedFix);
+      document.getElementById("terminal").textContent += `$ Analysis complete. Real reproduction/test execution is the next step.
+`;
+      toast("Live GitHub repository analysis completed");
+    }catch(err){
+      document.getElementById("detailStatus").textContent="Analysis Failed";
+      document.getElementById("terminal").textContent += `
+ERROR: ${err.message}
+`;
+      const running = workflowStates.findIndex(x=>x==="Running");
+      if(running>=0) workflowStates[running]="Failed";
+      renderWorkflow();
+      toast("Investigation failed: " + err.message);
+    }
   }
 
   function applyFix(){
     fixApproved=true;
-    toast("Fix approved by engineer");
+    toast("Proposed fix approved for verification");
     document.getElementById("applyFixBtn").textContent="Fix Approved ✓";
+    document.getElementById("detailStatus").textContent="Awaiting Verification";
     updatePrEligibility();
   }
   function regenerateFix(){toast("Alternative minimal fix generated")}
   function rejectFix(){fixApproved=false;toast("Fix rejected");updatePrEligibility()}
 
   async function runTest(){
-    if(!fixApproved){toast("Approve the fix before verification");return}
-    workflowStates[7]="Running";renderWorkflow();
-    document.getElementById("testRunStatus").textContent="Running";
-    await new Promise(r=>setTimeout(r,900));
-    workflowStates[7]="Passed";
-    workflowStates[8]="Passed";
+    if(!fixApproved){
+      toast("Approve the proposed fix before verification.");
+      return;
+    }
+
+    const { runnerEndpoint } = getRuntimeConfig();
+    workflowStates[7]="Running";
     renderWorkflow();
-    verified=true;
-    document.getElementById("testRunStatus").textContent="PASS";
-    document.getElementById("testCount").textContent="57 / 57";
-    document.getElementById("afterFix").textContent="save10 → HTTP 200 ✅";
-    document.getElementById("proofTests").textContent="57 / 57 Passed ✅";
-    document.getElementById("regressionBadge").textContent="Regression Detected: No";
-    document.getElementById("detailStatus").textContent="Verified";
-    updatePrEligibility();
-    toast("Verification passed — Proof of Fix generated");
+    document.getElementById("testRunStatus").textContent="Running";
+
+    if(!runnerEndpoint){
+      workflowStates[7]="Pending";
+      workflowStates[8]="Pending";
+      workflowStates[3]="Pending";
+      renderWorkflow();
+      verified=false;
+      document.getElementById("testRunStatus").textContent="Runner required";
+      document.getElementById("testCount").textContent="Not executed";
+      document.getElementById("executionEvidence").textContent="Execution evidence: None";
+      document.getElementById("reproActual").textContent="Not executed — configure Test Runner endpoint";
+      document.getElementById("reproModeNote").textContent =
+        "The reproduction/test plan is ready, but RepoPilot will not claim success without real execution evidence.";
+      document.getElementById("beforeFix").textContent="Not executed";
+      document.getElementById("afterFix").textContent="Not executed";
+      document.getElementById("proofTests").textContent="Verification pending";
+      document.getElementById("regressionBadge").textContent="Regression Detected: Unknown";
+      updatePrEligibility();
+      toast("Configure a Test Runner endpoint to execute the repository tests.");
+      return;
+    }
+
+    try{
+      const payload = {
+        repository: investigationContext.repo,
+        branch: investigationContext.branch,
+        issue: investigationContext.issue,
+        fix: investigationContext.proposedFix,
+        regression_test: investigationContext.proposedTest,
+        test_command: document.getElementById("reproCommand").textContent
+      };
+      const res = await fetch(runnerEndpoint,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error(`Runner failed (${res.status})`);
+      const result = await res.json();
+      investigationContext.execution = result;
+
+      const passed = result.passed === true || result.status === "passed";
+      workflowStates[3] = result.reproduced === false ? "Failed" : "Passed";
+      workflowStates[7] = passed ? "Passed" : "Failed";
+      workflowStates[8] = passed ? "Passed" : "Pending";
+      renderWorkflow();
+
+      verified = passed;
+      document.getElementById("testRunStatus").textContent = passed ? "PASS" : "FAIL";
+      document.getElementById("testCount").textContent =
+        result.total != null ? `${result.passed_count ?? result.passed ?? 0} / ${result.total}` : (passed ? "Passed" : "Failed");
+      document.getElementById("executionEvidence").textContent = "Execution evidence: Runner response";
+      document.getElementById("reproActual").textContent = result.before_result || (result.reproduced ? "Bug reproduced" : "Reproduction result returned");
+      document.getElementById("beforeFix").textContent = result.before_result || "Captured by runner";
+      document.getElementById("afterFix").textContent = result.after_result || (passed ? "Verified ✓" : "Verification failed");
+      document.getElementById("proofTests").textContent = passed ? "Regression suite passed ✅" : "Regression failure ❌";
+      document.getElementById("regressionBadge").textContent =
+        `Regression Detected: ${result.regression_detected ? "Yes" : (passed ? "No" : "Unknown")}`;
+      document.getElementById("filesChangedBadge").textContent =
+        `Files Changed: ${result.files_changed ?? "—"}`;
+      document.getElementById("testsAddedBadge").textContent =
+        `Tests Added: ${result.tests_added ?? 1}`;
+      document.getElementById("detailStatus").textContent = passed ? "Verified" : "Verification Failed";
+      document.getElementById("terminal").textContent += `
+$ Test runner completed: ${passed ? "PASS" : "FAIL"}
+${result.logs || ""}`;
+      updatePrEligibility();
+      toast(passed ? "Verification passed — Proof of Fix generated" : "Verification failed");
+    }catch(err){
+      workflowStates[7]="Failed";
+      renderWorkflow();
+      verified=false;
+      document.getElementById("testRunStatus").textContent="Runner error";
+      document.getElementById("terminal").textContent += `
+RUNNER ERROR: ${err.message}
+`;
+      updatePrEligibility();
+      toast("Test runner error: " + err.message);
+    }
   }
 
   function updatePrEligibility(){
@@ -922,7 +1315,7 @@
     document.getElementById("createPrBtn").disabled=!ok;
     document.getElementById("prStatus").textContent = ok
       ? "Ready to create a real GitHub pull request."
-      : "Requires GitHub connection + approved fix + passing verification.";
+      : "Requires GitHub connection + approved fix + real passing verification evidence.";
   }
 
 
@@ -1072,12 +1465,12 @@
     }
   }
 
-  function handleGithubButton(){
+  async function handleGithubButton(){
     if(github.connected){
       document.getElementById("githubWorkspace").scrollIntoView({behavior:"smooth"});
       return;
     }
-    openGitHubModal();
+    await connectGithubWithSupabase();
   }
 
   function renderGitHubAccount(){
@@ -1118,6 +1511,62 @@
     showGitHubDisconnectedUI();
     updateGithubConnectionControls();
     toast("GitHub disconnected");
+  }
+
+
+  async function connectGithubWithSupabase(){
+    try{
+      const redirectTo = window.location.href.split("?")[0].split("#")[0];
+
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          scopes: "repo read:user user:email",
+          redirectTo
+        }
+      });
+
+      if(error) throw error;
+    }catch(err){
+      toast("GitHub OAuth failed: " + err.message);
+    }
+  }
+
+  async function restoreGithubFromSupabaseSession(){
+    try{
+      const { data, error } = await supabaseClient.auth.getSession();
+      if(error) throw error;
+
+      const session = data.session;
+      if(!session || !session.provider_token){
+        showGitHubDisconnectedUI();
+        return false;
+      }
+
+      github.token = session.provider_token;
+
+      const user = await ghFetch("/user");
+      github.connected = true;
+      github.owner = user.login;
+      github.user = user;
+
+      document.getElementById("connectionBadge").textContent = "● GitHub connected";
+      document.getElementById("connectionBadge").className = "badge success";
+
+      document.getElementById("githubInfo").classList.remove("hidden");
+      document.getElementById("githubInfo").innerHTML =
+        `<strong>GitHub connected</strong><br>Signed in as ${escapeHtml(user.login)}.`;
+
+      showGitHubConnectedUI();
+      await refreshGitHubWorkspace();
+      return true;
+    }catch(err){
+      github.connected = false;
+      github.token = null;
+      showGitHubDisconnectedUI();
+      console.error(err);
+      return false;
+    }
   }
 
   function showGitHubConnectedUI(){
@@ -1517,19 +1966,22 @@ Human approval: Yes`;
     currentSupabaseUser = data.session?.user || null;
     await enterApp();
     if(currentSupabaseUser){
-      await restoreGitHubConnectionInBackground();
+      await restoreGithubFromSupabaseSession();
     }
 
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentSupabaseUser = session?.user || null;
       await enterApp();
+      if(session?.provider_token){
+        await restoreGithubFromSupabaseSession();
+      }
     });
   })();
 
   updateGithubConnectionControls();
+  loadRuntimeConfig();
 
-  // GitHub OAuth callback handler: runs automatically if GitHub redirects back with ?code=...&state=...
-  finishGitHubOAuthIfPresent();
+  // GitHub connection is restored from the Supabase OAuth session after redirect.
 </script>
 </body>
 </html>
