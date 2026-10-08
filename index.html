@@ -29,7 +29,24 @@
 </style>
 <style>
 .clock-panel{padding:25px;margin-bottom:23px}.clock-status{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.clock-state{font-size:24px;font-weight:800}.clock-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.clock-actions button{min-width:125px}.filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;padding:18px 21px}.filters label{font-size:12px;font-weight:700;color:var(--muted)}.filters input,.filters select{width:100%;padding:10px;border:1px solid #dae2ec;border-radius:10px;background:#fff}.report-note{margin:0 20px 15px;color:var(--muted);font-size:12px}@media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.clock-actions button{flex:1}}@media(max-width:550px){.filters{grid-template-columns:1fr}.clock-status{display:block}}
-</style></head><body><template id="fireice-setup-sql">-- FIRE &amp; ICE: CLEAN SELF-SERVICE DATABASE SETUP
+</style><style id="fi-takehome-css">
+#takehome-form .form-grid{align-items:start}
+.fi-net{background:linear-gradient(135deg,#e8fbf4,#fff);border-color:#b5ecd9}.fi-net strong{color:#0b8f66}
+.fi-tax{margin:0}.fi-tax .summary{border-bottom:0;padding:13px 0 6px}.fi-tax .summary span{display:grid;gap:2px}.fi-tax small,.fi-chart small{display:block;font-size:12px;color:var(--muted);font-weight:500}.fi-tax .summary b{text-align:right}
+.fi-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.fi-bar{height:6px;border-radius:6px;background:#eef2f7;overflow:hidden;margin-bottom:6px}.fi-bar span{display:block;height:100%;border-radius:6px}
+.fi-row{border-bottom:2px solid var(--line)}.fi-total{border-top:2px solid var(--ink);border-bottom:0;margin-top:8px;font-size:19px;color:#0b8f66}
+.fi-chart{display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.fi-donut{width:210px;height:210px;border-radius:50%;display:grid;place-items:center;flex:none}.fi-donut>div{width:140px;height:140px;border-radius:50%;background:#fff;display:grid;place-content:center;text-align:center}.fi-donut strong{font-size:22px}
+.fi-legend{list-style:none;margin:0;padding:0;flex:1;min-width:200px}.fi-legend li{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}.fi-legend li span{flex:1}.fi-legend i{width:11px;height:11px;border-radius:3px;flex:none}
+#fi-paystub{border:2px dashed #cfd8e3}.stub-head{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:18px}
+.stub-meta{display:grid;gap:6px;font-size:14px}.stub-meta span{color:var(--muted);margin-right:8px}
+.stub-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}.stub-grid h3{margin:0 0 4px}
+.stub-net{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#e8fbf4;border:1px solid #b5ecd9;border-radius:14px;padding:18px 22px;margin:20px 0 12px;font-weight:800}.stub-net strong{font-size:30px;color:#0b8f66}
+@media(max-width:760px){.stub-grid{grid-template-columns:1fr}.fi-donut{width:180px;height:180px}.fi-donut>div{width:120px;height:120px}}
+@media print{body *{visibility:hidden}#fi-paystub,#fi-paystub *{visibility:visible}#fi-paystub{position:absolute;left:0;top:0;width:100%;border:0;box-shadow:none}}
+</style>
+</head><body><template id="fireice-setup-sql">-- FIRE &amp; ICE: CLEAN SELF-SERVICE DATABASE SETUP
 -- For the dedicated Supabase project ckkkosysrfllnppjmldd.
 -- IMPORTANT: Back up your database first. This REPLACES the four named public tables.
 -- It preserves auth.users (existing login accounts) and other unrelated tables.
@@ -383,46 +400,192 @@ function analyticsPage(){const data=analyticsData(),worked=sumAnalytics(data,'re
 // Fire & Ice 2026 beginner-friendly estimated take-home module.
 const FI_STATES = [['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']];
 const FI_NO_WAGE_TAX=new Set(['AK','FL','NV','NH','SD','TN','TX','WA','WY']);
-const FI_DEFAULT={workState:'OH',residenceState:'OH',workZip:'',homeZip:'',sameLocation:true,payPeriod:'pc1',w4:'single',more:false,city:'',pretax:'0',other:'0',local:'',state:'',federal:'',ytd:'0'};
+const FI_DEFAULT={workState:'OH',residenceState:'OH',workZip:'',homeZip:'',sameLocation:true,freq:'semi',view:'cur',anchor:'',w4:'single',more:false,city:'',pretax:'0',other:'0',local:'',localPct:'',state:'',federal:'',ytd:'0'};
 let fiZipResults={work:null,home:null},fiZipErrors={work:'',home:''};
 let fiSettings={...FI_DEFAULT},fiReadyForUser='';
 function fiLoadSettings(){const uid=session?.user?.id||'';if(fiReadyForUser===uid)return;fiReadyForUser=uid;try{fiSettings={...FI_DEFAULT,...JSON.parse(localStorage.getItem('fireice_takehome_2026_'+uid)||'{}'),more:false}}catch{fiSettings={...FI_DEFAULT}}}
 const fiNum=x=>Math.max(0,Number(x)||0);
-function fiPeriod(){const month=today().slice(0,7),r=fiSettings.payPeriod,year=today().slice(0,4);return shifts.filter(s=>r==='all'?s.date.startsWith(year):r==='month'?s.date.startsWith(month):s.date.startsWith(month)&&(r==='pc1'?Number(s.date.slice(8))<=15:Number(s.date.slice(8))>15))}
 const FI_BRACKETS={single:[[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]],married:[[24800,.10],[100800,.12],[211400,.22],[403550,.24],[512450,.32],[768700,.35],[Infinity,.37]],head:[[17700,.10],[67450,.12],[105700,.22],[201750,.24],[256200,.32],[640600,.35],[Infinity,.37]]};
 const FI_DEDUCTION={single:16100,married:32200,head:24150};
 function fiAnnualTax(taxable,status){let tax=0,previous=0;for(const [limit,rate] of FI_BRACKETS[status]||FI_BRACKETS.single){if(taxable<=previous)break;tax+=Math.max(0,Math.min(taxable,limit)-previous)*rate;previous=limit;}return tax}
-function fiCompute(){const rows=fiPeriod(),all=breakdown(),gross=rows.reduce((n,s)=>n+shiftPay(s,all).total,0),r=fiSettings.payPeriod,periods=r==='pc1'||r==='pc2'?24:r==='month'?12:1;
- // Approximate tax liability annualized from this pay period, NOT IRS W-4 withholding.
- const annualWages=gross*periods,pretax=Math.min(gross,fiNum(fiSettings.pretax)),federalApprox=fiAnnualTax(Math.max(0,(gross-pretax)*periods-FI_DEDUCTION[fiSettings.w4]),fiSettings.w4)/periods;
+// ---- Pay frequency + period windows ----
+const FI_FREQ={weekly:{n:52,label:'Weekly'},bi:{n:26,label:'Every 2 weeks'},semi:{n:24,label:'Twice a month (1st–15th, 16th–end)'},monthly:{n:12,label:'Monthly'}};
+const FI_VIEWS={cur:'Current pay period',prev:'Previous pay period',month:'This month',ytd:'Year to date'};
+const fiDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const fiParse=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1)};
+const fiAdd=(s,n)=>{const d=fiParse(s);d.setDate(d.getDate()+n);return fiDate(d)};
+const fiValidDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!isNaN(fiParse(s));
+const fiNice=s=>fiParse(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+function fiWindow(){
+ const t=today(),freq=FI_FREQ[fiSettings.freq]?fiSettings.freq:'semi',view=FI_VIEWS[fiSettings.view]?fiSettings.view:'cur',off=view==='prev'?1:0;
+ const y=Number(t.slice(0,4)),m=Number(t.slice(5,7))-1,day=Number(t.slice(8));
+ const first=(yy,mm)=>fiDate(new Date(yy,mm,1)),last=(yy,mm)=>fiDate(new Date(yy,mm+1,0));
+ if(view==='ytd')return{start:`${y}-01-01`,end:t,periods:1,label:'Year to date'};
+ if(view==='month')return{start:first(y,m),end:last(y,m),periods:12,label:'This month'};
+ let start,end;const periods=FI_FREQ[freq].n;
+ if(freq==='monthly'){const d=new Date(y,m-off,1);start=first(d.getFullYear(),d.getMonth());end=last(d.getFullYear(),d.getMonth());}
+ else if(freq==='semi'){let yy=y,mm=m,half=day<=15?1:2;if(off){if(half===2)half=1;else{half=2;const d=new Date(y,m-1,1);yy=d.getFullYear();mm=d.getMonth();}}start=half===1?first(yy,mm):fiDate(new Date(yy,mm,16));end=half===1?fiDate(new Date(yy,mm,15)):last(yy,mm);}
+ else{const len=freq==='weekly'?7:14,anchor=fiValidDate(fiSettings.anchor)?fiSettings.anchor:'2026-01-05',diff=Math.round((fiParse(t)-fiParse(anchor))/864e5),k=Math.floor(diff/len)-off;start=fiAdd(anchor,k*len);end=fiAdd(start,len-1);}
+ return{start,end,periods,label:FI_VIEWS[view]};
+}
+
+// ---- Simplified 2026 state income-tax models (single filer). d = standard deduction/exemption, b = [upTo, rate], cr = credit ----
+// Married filing jointly = 2x thresholds, head of household = 1.5x (simplification). Estimates only.
+const flat=(d,r,extra={})=>({d,b:[[Infinity,r]],...extra});
+const FI_ST={
+ AL:{d:4500,b:[[500,.02],[3000,.04],[Infinity,.05]]},
+ AZ:flat(16100,.025),
+ AR:{d:2470,b:[[4400,.02],[8800,.03],[Infinity,.039]]},
+ CA:{d:5706,b:[[11079,.01],[26264,.02],[41452,.04],[57542,.06],[72724,.08],[371479,.093],[445771,.103],[742953,.113],[Infinity,.123]]},
+ CO:flat(16100,.044),
+ CT:{d:w=>Math.max(0,15000-Math.max(0,w-30000)),b:[[10000,.02],[50000,.045],[100000,.055],[200000,.06],[250000,.065],[500000,.069],[Infinity,.0699]]},
+ DE:{d:3250,b:[[2000,0],[5000,.022],[10000,.039],[20000,.048],[25000,.052],[60000,.0555],[Infinity,.066]],cr:()=>110},
+ GA:flat(12000,.0519),
+ HI:{d:4400,b:[[9600,.014],[14400,.032],[19200,.055],[24000,.064],[36000,.068],[48000,.072],[125000,.076],[175000,.079],[225000,.0825],[275000,.09],[325000,.10],[Infinity,.11]]},
+ ID:flat(16100,.053),
+ IL:flat(2850,.0495),
+ IN:flat(1000,.0295),
+ IA:flat(16100,.038),
+ KS:{d:12765,b:[[23000,.052],[Infinity,.0558]]},
+ KY:flat(3360,.035),
+ LA:flat(12500,.03),
+ ME:{d:15150,b:[[26800,.058],[63450,.0675],[Infinity,.0715]]},
+ MD:{d:3350,b:[[1000,.02],[2000,.03],[3000,.04],[100000,.0475],[125000,.05],[150000,.0525],[250000,.055],[500000,.0575],[1000000,.0625],[Infinity,.065]]},
+ MA:{d:4400,b:[[1083150,.05],[Infinity,.09]]},
+ MI:flat(5900,.0425),
+ MN:{d:14950,b:[[33310,.0535],[109430,.068],[203150,.0785],[Infinity,.0985]]},
+ MS:{d:8300,b:[[10000,0],[Infinity,.04]]},
+ MO:{d:16100,b:[[1313,0],[2626,.02],[3939,.025],[5252,.03],[6565,.035],[7878,.04],[9191,.045],[Infinity,.047]]},
+ MT:{d:5540,b:[[47500,.047],[Infinity,.0565]]},
+ NE:{d:8600,b:[[4030,.0246],[24120,.0351],[Infinity,.0455]]},
+ NJ:{d:1000,b:[[20000,.014],[35000,.0175],[40000,.035],[75000,.05525],[500000,.0637],[1000000,.0897],[Infinity,.1075]]},
+ NM:{d:16100,b:[[5500,.015],[11000,.032],[16000,.043],[210000,.047],[Infinity,.049]]},
+ NY:{d:8000,b:[[8500,.039],[11700,.044],[13900,.0515],[80650,.054],[215400,.059],[1077550,.0685],[Infinity,.0965]]},
+ NC:flat(12750,.0399),
+ ND:{d:16100,b:[[48475,0],[244825,.0195],[Infinity,.025]]},
+ OH:{d:0,b:[[26050,0],[Infinity,.0275]]},
+ OK:{d:6350,b:[[1000,.0025],[2500,.0075],[3750,.0175],[4900,.0275],[7200,.0375],[Infinity,.045]]},
+ OR:{d:2835,b:[[4400,.0475],[11100,.0675],[125000,.0875],[Infinity,.099]]},
+ PA:flat(0,.0307),
+ RI:{d:10900,b:[[79900,.0375],[181650,.0475],[Infinity,.0599]]},
+ SC:{d:16100,b:[[3640,0],[18230,.03],[Infinity,.06]]},
+ UT:flat(0,.045,{cr:w=>Math.max(0,876-.013*Math.max(0,w-18213))}),
+ VT:{d:7400,b:[[47900,.0335],[116000,.066],[242000,.076],[Infinity,.0875]]},
+ VA:{d:8750,b:[[3000,.02],[5000,.03],[17000,.05],[Infinity,.0575]]},
+ WV:{d:0,b:[[10000,.0222],[25000,.0296],[40000,.0333],[60000,.0444],[Infinity,.0482]]},
+ WI:{d:13560,b:[[14680,.035],[29370,.044],[323290,.053],[Infinity,.0765]]}
+};
+// ---- State payroll programs paid by employees: [label, rate, wage cap or null] (approximate 2026) ----
+const SSCAP=184500;
+const FI_PAYROLL={
+ CA:[['CA State Disability Insurance (SDI)',.013,null]],
+ CO:[['CO FAMLI paid leave',.0044,SSCAP]],
+ CT:[['CT Paid Leave',.005,SSCAP]],
+ DE:[['DE Paid Leave',.004,SSCAP]],
+ MA:[['MA Paid Family & Medical Leave',.0046,SSCAP]],
+ ME:[['ME Paid Family & Medical Leave',.005,SSCAP]],
+ MN:[['MN Paid Leave',.0044,SSCAP]],
+ NJ:[['NJ unemployment / workforce / disability (≈)',.006,44800],['NJ Family Leave Insurance (≈)',.0033,165400]],
+ NY:[['NY Disability (SDI)',.005,6240],['NY Paid Family Leave',.00432,95350]],
+ OR:[['OR Paid Leave',.006,SSCAP],['OR statewide transit tax',.001,null]],
+ PA:[['PA unemployment (UC)',.0007,null]],
+ RI:[['RI Temporary Disability Insurance (≈)',.013,89000]],
+ WA:[['WA Cares (long-term care)',.0058,null],['WA Paid Family & Medical Leave',.0113*.7143,SSCAP]]
+};
+// ---- Typical local income-tax estimates (percent of wages). Employee can override in advanced settings. ----
+const FI_LOCAL={OH:[2,'Municipal income tax (est. 2%)'],PA:[1,'Local earned income tax (est. 1%)'],MD:[3,'County income tax (est. 3%)'],IN:[1.5,'County income tax (est. 1.5%)'],KY:[1.5,'Local occupational tax (est. 1.5%)']};
+const FI_COLORS=['#ff6b2b','#ff9a5c','#f4b942','#7a5cff','#00c6e9','#2f80ed','#d94f9b','#8e9aaf','#4f6d7a','#b5651d','#a3b18a'];
+function fiStateTax(code,annualWages,status){
+ const m=FI_ST[code];if(!m)return 0;
+ const scale=status==='married'?2:status==='head'?1.5:1,w=annualWages/scale;
+ const d=typeof m.d==='function'?m.d(w):(m.d||0),ti=Math.max(0,w-d);
+ let tax=0,prev=0;for(const [lim,r] of m.b){if(ti<=prev)break;tax+=(Math.min(ti,lim)-prev)*r;prev=lim}
+ if(m.cr)tax-=m.cr(w);
+ return Math.max(0,tax)*scale;
+}
+function fiCompute(){
+ const win=fiWindow(),all=breakdown(),status=FI_DEDUCTION[fiSettings.w4]?fiSettings.w4:'single';
+ const rows=shifts.filter(s=>s.date>=win.start&&s.date<=win.end).sort((a,b)=>a.date.localeCompare(b.date));
+ let gross=0,regHours=0,otHours=0,regPay=0,otPay=0;
+ for(const s of rows){const b=shiftPay(s,all);gross+=b.total;regHours+=b.regular;otHours+=b.overtime;regPay+=b.regularPay;otPay+=b.otPay}
+ const periods=win.periods,ytd=fiNum(fiSettings.ytd),pretax=Math.min(gross,fiNum(fiSettings.pretax)),other=fiNum(fiSettings.other);
+ const annualTaxable=Math.max(0,gross-pretax)*periods;
+ const federalApprox=fiAnnualTax(Math.max(0,annualTaxable-FI_DEDUCTION[status]),status)/periods;
  const federal=fiSettings.federal!==''?fiNum(fiSettings.federal):federalApprox;
- const ss=.062*Math.min(gross,Math.max(0,184500-fiNum(fiSettings.ytd)));
- const medicare=gross*.0145,extraMedicare=.009*Math.min(gross,Math.max(0,fiNum(fiSettings.ytd)+gross-200000));
- const workNo=FI_NO_WAGE_TAX.has(fiSettings.workState),homeNo=FI_NO_WAGE_TAX.has(fiSettings.residenceState),stateSupported=workNo&&homeNo;
- const state=fiSettings.state!==''?fiNum(fiSettings.state):(stateSupported?0:null);
- const local=fiSettings.local!==''?fiNum(fiSettings.local):null;
- const other=fiNum(fiSettings.other),known=ss+medicare+extraMedicare+federal+pretax+other+(state??0)+(local??0);
- return {rows,gross,annualWages,ss,medicare,extraMedicare,federal,federalApprox,pretax,other,state,local,known,remaining:Math.max(0,gross-known),stateSupported,full:state!==null&&local!==null};}
+ const ss=.062*Math.min(gross,Math.max(0,SSCAP-ytd)),medicare=gross*.0145,extraMedicare=.009*Math.min(gross,Math.max(0,ytd+gross-200000));
+ const ws=fiSettings.workState,rs=fiSettings.residenceState;
+ const stW=fiStateTax(ws,annualTaxable,status)/periods,stR=rs!==ws?fiStateTax(rs,annualTaxable,status)/periods:0;
+ const stateCode=stR>stW?rs:ws,stateCalc=Math.max(stW,stR);
+ const state=fiSettings.state!==''?fiNum(fiSettings.state):stateCalc;
+ const payroll=(FI_PAYROLL[ws]||[]).map(([label,rate,cap])=>({label,amount:rate*Math.min(gross,Math.max(0,(cap||Infinity)-ytd))}));
+ const lm=FI_LOCAL[ws],pct=fiSettings.localPct!==''?fiNum(fiSettings.localPct):(lm?lm[0]:0);
+ const local=fiSettings.local!==''?fiNum(fiSettings.local):gross*pct/100;
+ const stateName=FI_STATES.find(x=>x[0]===stateCode)?.[1]||stateCode,noStateTax=!FI_ST[stateCode];
+ const lines=[
+  {label:'Federal income tax',amount:federal,note:fiSettings.federal!==''?'From your paystub':'Estimated 2026 withholding'},
+  {label:'Social Security (6.2%)',amount:ss,note:'Up to $184,500 of wages'},
+  {label:'Medicare (1.45%)',amount:medicare,note:'All wages'}
+ ];
+ if(extraMedicare>0)lines.push({label:'Additional Medicare (0.9%)',amount:extraMedicare,note:'Wages over $200,000'});
+ lines.push({label:`${stateName} state income tax`,amount:state,note:fiSettings.state!==''?'From your paystub':noStateTax?'No state income tax on wages':stateCode!==ws?'Home-state tax (higher than work state)':'Estimated'});
+ for(const p of payroll)lines.push({label:p.label,amount:p.amount,note:'State payroll program'});
+ lines.push({label:lm?lm[1].replace(/\(est\. [\d.]+%\)/,pct!==lm[0]?`(${pct}%)`:'$&'):'Local income tax',amount:local,note:fiSettings.local!==''?'From your paystub':pct>0?`Estimated at ${pct}% — change in advanced settings`:'None assumed; add yours in advanced settings'});
+ lines.forEach((l,i)=>l.color=FI_COLORS[i%FI_COLORS.length]);
+ const totalTax=lines.reduce((n,l)=>n+l.amount,0),deductions=pretax+other,takeHome=Math.max(0,gross-totalTax-deductions);
+ return{win,rows,gross,regHours,otHours,regPay,otPay,lines,totalTax,pretax,other,deductions,takeHome,periods,stateCode,federalApprox};
+}
 function fiStateSelect(name,label){return `<label class="field">${label}<select name="${name}">${FI_STATES.map(([code,n])=>`<option value="${code}" ${fiSettings[name]===code?'selected':''}>${n}</option>`).join('')}</select></label>`}
 function fiOptional(label,name,help){return `<label class="field">${label}<input type="number" min="0" step="0.01" name="${name}" value="${esc(fiSettings[name]??'')}">${help?`<span class="help">${help}</span>`:''}</label>`}
 function fiZipBlock(which){const home=which==='home',zip=String(home?fiSettings.homeZip:fiSettings.workZip),state=home?fiSettings.residenceState:fiSettings.workState,r=fiZipResults[which],err=fiZipErrors[which];return `<div class="field"><label for="fi-${which}-zip">${home?'Home':'Work'} ZIP code</label><input id="fi-${which}-zip" name="${home?'homeZip':'workZip'}" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="e.g. 43215" value="${esc(zip)}" autocomplete="postal-code"><span class="help">Enter 5 digits — we'll look up the city automatically.</span>${err?`<div class="warning" role="status">${esc(err)}</div>`:''}${r?`<div class="notice" role="status" style="margin:6px 0"><strong>✓ Location found:</strong> ${esc(r.places.map(x=>x['place name']).join(', '))}, ${esc(r['state abbreviation'])}. <strong>City is a postal match, not a verified tax district.</strong></div>`:zip.length===5?`<span class="help">Checking location, or ZIP lookup unavailable. The tax estimate can still run.</span>`:''}${state==='OH'?`<p class="help">Ohio local tax boundaries may differ from ZIP areas. <a href="https://thefinder.tax.ohio.gov/" target="_blank" rel="noopener noreferrer">Verify local taxes using Ohio The Finder ↗</a>. Address confirmation may be needed.</p>`:`<p class="help">Local tax jurisdiction cannot always be identified from ZIP alone.</p>`}</div>`}
 let fiZipRequest={work:0,home:0},fiZipTimer;
 async function fiLookupZip(which){const seq=++fiZipRequest[which];const zip=fiSettings[which==='home'?'homeZip':'workZip'];const state=fiSettings[which==='home'?'residenceState':'workState'];if(!/^\d{5}$/.test(zip)){fiZipResults[which]=null;fiZipErrors[which]='';return;}fiZipErrors[which]='';fiZipResults[which]=null;try{const response=await fetch('https://api.zippopotam.us/us/'+encodeURIComponent(zip),{signal:AbortSignal.timeout(7000)});if(!response.ok)throw Error(response.status===404?'ZIP code not found.':'Postal lookup unavailable.');const data=await response.json();if(seq!==fiZipRequest[which]||fiSettings[which==='home'?'homeZip':'workZip']!==zip)return;if(data.country!=='United States'||data.places?.[0]?.['state abbreviation']!==state)throw Error('ZIP code does not match the selected state.');fiZipResults[which]=data;}catch(e){if(seq!==fiZipRequest[which])return;fiZipErrors[which]=e.name==='TimeoutError'?'Postal lookup timed out; your estimate can still run.':e.message||'Lookup unavailable';}if(page==='takehome'&&session)render()}
 function fiSaveSettingsSilently(){if(!session?.user?.id)return;try{localStorage.setItem('fireice_takehome_2026_'+session.user.id,JSON.stringify(fiSettings))}catch{}}
-function takeHomePage(){fiLoadSettings();const p=fiCompute(),stateName=FI_STATES.find(x=>x[0]===fiSettings.workState)?.[1]||'Your state';return `<div class="page-head"><div><div class="eyebrow">FIRE & ICE · SMART PAY · 2026</div><h1>My <em>Take-Home.</em></h1><p class="muted">New employee? Just select your state and enter your ZIP. We automatically estimate supported deductions using your logged earnings.</p></div></div>
-<div class="notice"><strong>No paystub or tax experience needed.</strong> We fill in the postal city automatically and calculate available federal and payroll-tax estimates. You do not need any previous paycheck. State and local taxes remain clearly marked when unverified.</div>
+let fiZipPending={work:false,home:false};
+function fiAutoZip(){for(const w of ['work','home']){const z=String(fiSettings[w==='home'?'homeZip':'workZip']||'');if(/^\d{5}$/.test(z)&&!fiZipResults[w]&&!fiZipErrors[w]&&!fiZipPending[w]){fiZipPending[w]=true;setTimeout(()=>{Promise.resolve(fiLookupZip(w)).finally(()=>{fiZipPending[w]=false})},0)}}}
+const fiPct=(a,g)=>g>0?(a/g*100).toFixed(1)+'%':'—';
+function fiDonut(p){
+ if(p.gross<=0)return '<p class="muted">No shifts are logged in this period yet. Log a shift and your estimate will appear here.</p>';
+ const segs=[...p.lines.filter(l=>l.amount>0),...(p.deductions>0?[{label:'Deductions',amount:p.deductions,color:'#8e9aaf'}]:[]),{label:'Take-home',amount:p.takeHome,color:'#12b886'}];
+ let acc=0;const parts=segs.map(s=>{const a=acc;acc+=s.amount/p.gross*100;return `${s.color} ${a.toFixed(3)}% ${acc.toFixed(3)}%`}).join(',');
+ return `<div class="fi-chart"><div class="fi-donut" role="img" aria-label="Where your gross pay goes" style="background:conic-gradient(${parts})"><div><small>Take-home</small><strong>${fmt(p.takeHome)}</strong><small>${fiPct(p.takeHome,p.gross)} of gross</small></div></div><ul class="fi-legend">${segs.map(s=>`<li><i style="background:${s.color}"></i><span>${esc(s.label)}</span><b>${fmt(s.amount)}</b></li>`).join('')}</ul></div>`;
+}
+function fiPaystub(p){
+ const emp=employee?.full_name||session?.user?.email||'Employee',fq=FI_FREQ[fiSettings.freq]?.label||'';
+ const earn=[[`Regular pay (${p.regHours.toFixed(2)} h)`,p.regPay],...(p.otHours>0?[[`Overtime pay (${p.otHours.toFixed(2)} h)`,p.otPay]]:[])];
+ const ded=[...p.lines.map(l=>[l.label,l.amount]),...(p.pretax>0?[['Pre-tax deductions',p.pretax]]:[]),...(p.other>0?[['Other deductions',p.other]]:[])];
+ return `<section class="card panel" id="fi-paystub"><div class="stub-head"><div><div class="brand"><span class="flame">🔥</span> Fire <b>&amp; Ice</b></div><small class="muted">Estimated earnings statement — not an official pay document</small></div><div class="stub-meta"><div><span>Employee</span><b>${esc(emp)}</b></div><div><span>Pay period</span><b>${fiNice(p.win.start)} – ${fiNice(p.win.end)}</b></div><div><span>Pay frequency</span><b>${esc(fq)}</b></div></div></div>
+ <div class="stub-grid"><div><h3>Earnings</h3>${earn.map(([l,v])=>`<div class="summary"><span>${esc(l)}</span><b>${fmt(v)}</b></div>`).join('')}<div class="summary"><strong>Gross pay</strong><strong>${fmt(p.gross)}</strong></div></div>
+ <div><h3>Taxes &amp; deductions</h3>${ded.map(([l,v])=>`<div class="summary"><span>${esc(l)}</span><b>− ${fmt(v)}</b></div>`).join('')}<div class="summary"><strong>Total taxes &amp; deductions</strong><strong>− ${fmt(p.totalTax+p.deductions)}</strong></div></div></div>
+ <div class="stub-net"><span>NET PAY (estimated take-home)</span><strong>${fmt(p.takeHome)}</strong></div>
+ <p class="help">Estimates use simplified 2026 rules. Your employer's actual paycheck can differ because of your W-4, local taxes, credits and benefit deductions.</p></section>`;
+}
+function takeHomePage(){
+ fiLoadSettings();fiAutoZip();
+ const p=fiCompute(),stateName=FI_STATES.find(x=>x[0]===fiSettings.workState)?.[1]||'Your state',freq=fiSettings.freq,needAnchor=freq==='weekly'||freq==='bi',sel=(name,val)=>fiSettings[name]===val?'selected':'';
+ return `<div class="page-head"><div><div class="eyebrow">FIRE &amp; ICE · SMART PAY · 2026</div><h1>My <em>Take-Home.</em></h1><p class="muted">New employee? Pick your state, enter your ZIP and how often you're paid. We calculate every tax from the shifts you've logged — no paystub needed.</p></div></div>
+<div class="notice"><strong>Your paycheck, tax by tax.</strong> Federal income tax, Social Security, Medicare, your state's income tax, state payroll programs and a local-tax estimate are all calculated for you. These are simplified 2026 estimates, not your employer's official payroll.</div>
 <section class="card panel" style="margin-bottom:22px"><h2>Start here — no tax knowledge needed</h2><form id="takehome-form"><div class="form-grid">${fiStateSelect('workState','Work state')}${fiZipBlock('work')}</div>
 <label style="display:flex;align-items:center;gap:10px;margin:15px 0;font-weight:700"><input type="checkbox" name="sameLocation" id="fi-same" ${fiSettings.sameLocation?'checked':''} style="width:20px;height:20px"> My home and workplace are in the same ZIP code</label>
 ${!fiSettings.sameLocation?`<div class="form-grid">${fiStateSelect('residenceState','Home state')}${fiZipBlock('home')}</div>`:''}
-<div class="form-grid"><label class="field">Filing status<select name="w4"><option value="single" ${fiSettings.w4==='single'?'selected':''}>Single / Not sure (illustration)</option><option value="married" ${fiSettings.w4==='married'?'selected':''}>Married, filing jointly</option><option value="head" ${fiSettings.w4==='head'?'selected':''}>Head of household</option></select></label>
-<label class="field">View earnings for<select name="payPeriod"><option value="pc1" ${fiSettings.payPeriod==='pc1'?'selected':''}>This month · 1st–15th</option><option value="pc2" ${fiSettings.payPeriod==='pc2'?'selected':''}>This month · 16th–end</option><option value="month" ${fiSettings.payPeriod==='month'?'selected':''}>This month</option><option value="all" ${fiSettings.payPeriod==='all'?'selected':''}>All logged shifts this year</option></select></label></div>
+<div class="form-grid"><label class="field">Filing status<select name="w4"><option value="single" ${sel('w4','single')}>Single / Not sure (illustration)</option><option value="married" ${sel('w4','married')}>Married, filing jointly</option><option value="head" ${sel('w4','head')}>Head of household</option></select></label>
+<label class="field">How often are you paid?<select name="freq">${Object.entries(FI_FREQ).map(([k,v])=>`<option value="${k}" ${sel('freq',k)}>${v.label}</option>`).join('')}</select></label>
+<label class="field">View paycheck for<select name="view">${Object.entries(FI_VIEWS).map(([k,v])=>`<option value="${k}" ${sel('view',k)}>${v}</option>`).join('')}</select></label>
+${needAnchor?`<label class="field">A date one of your pay periods started<input type="date" name="anchor" value="${esc(fiSettings.anchor)}"><span class="help">Optional. Without it, periods start on Mondays.</span></label>`:''}</div>
 <div class="inline-actions"><button class="primary" type="submit">Show my estimated paycheck →</button><button type="button" class="secondary" data-action="tax-advanced">${fiSettings.more?'Hide advanced settings':'I have a paystub (optional)'}</button></div>
-${fiSettings.more?`<div class="form-grid" style="margin-top:16px">${fiOptional('State withholding from actual paycheck ($)','state','Optional override. Leave blank if unknown.')}${fiOptional('Local / school withholding ($)','local','Leave blank if unknown, not zero.')}${fiOptional('Federal withholding from actual paycheck ($)','federal','Overrides approximate federal estimate.')}${fiOptional('Pre-tax deductions ($)','pretax','Simplified treatment; tax effects depend on deduction type.')}${fiOptional('Other after-tax deductions ($)','other','Optional')}${fiOptional('Previous 2026 Social Security wages ($)','ytd','Optional; zero for a new worker with no earlier wages.')}</div><button class="primary" type="submit">Save details</button>`:''}
-<p class="help" style="margin-top:12px">Your ZIP is used for a postal-city lookup (Zippopotam.us), not a complete tax-jurisdiction lookup. You can start without a paystub. Tax preferences are stored in this browser, not synchronized to Supabase.</p></form></section>
-<section class="statgrid" style="margin-bottom:22px"><div class="card stat"><p>Gross earnings</p><strong>${fmt(p.gross)}</strong><small>${p.rows.length} logged shifts</small></div><div class="card stat"><p>Estimated federal + FICA</p><strong>${fmt(p.federal+p.ss+p.medicare+p.extraMedicare)}</strong><small>2026 rough estimate</small></div><div class="card stat"><p>${p.full?'Balance after supplied deductions':'Partial estimate — not take-home'}</p><strong>${fmt(p.remaining)}</strong><small>${p.full?'Verify before relying on estimate':'State/local taxes may be missing'}</small></div></section>
-<div class="twocol"><section class="card panel"><h2>Paycheck breakdown</h2>${[['Gross earnings',p.gross],['Approximate federal tax',p.federal],['Social Security',p.ss],['Medicare',p.medicare],['Additional Medicare',p.extraMedicare],['State withholding',p.state],['Local / school tax',p.local],['Other deductions',p.pretax+p.other]].map(([label,v])=>`<div class="summary"><span>${esc(label)}</span><b>${v===null?'<span style="color:#bd6725">Not calculated</span>':fmt(v)}</b></div>`).join('')}<div class="summary"><strong>${p.full?'Remaining after supplied entries':'Remaining before unknown taxes'}</strong><strong>${fmt(p.remaining)}</strong></div><button class="secondary" data-action="takehome-csv">↓ Export estimate CSV</button></section>
-<section class="card panel"><h2>What is included in your estimate?</h2><p><strong>Federal:</strong> approximate 2026 annualized tax illustration, not actual W-4 withholding.</p><p><strong>Social Security / Medicare:</strong> simplified 2026 statutory rate estimate.</p><p><strong>Work:</strong> ${esc(stateName)}${fiSettings.workZip?' · ZIP '+esc(fiSettings.workZip):' · no ZIP yet'}. ${fiZipResults.work?'Postal place found; tax jurisdiction unverified.':'Enter ZIP to check postal place.'}</p><p><strong>Residence:</strong> ${esc(FI_STATES.find(x=>x[0]===fiSettings.residenceState)?.[1]||'Unknown')}${fiSettings.homeZip?' · ZIP '+esc(fiSettings.homeZip):''}.</p><p><strong>${p.stateSupported?'State wage-income tax category verified':'State withholding unsupported'}:</strong> ${p.stateSupported?'Neither chosen state has broad-based wage income tax. Other payroll charges may apply.':'Automatic state withholding is not implemented for this location.'}</p><p><strong>Local taxes:</strong> not automatically verified from ZIP. Confirm using the official authority${fiSettings.workState==='OH'?' or Ohio The Finder':''}.</p><div class="warning">${p.full?'Your manually entered deductions are included; this still is not a precise net paycheck.':'Your remaining balance is incomplete until unknown state/local amounts are established.'} Some ZIP codes cross tax boundaries. Tax rates are never inferred from city names alone.</div><p class="help"><a href="https://thefinder.tax.ohio.gov/" target="_blank" rel="noopener noreferrer">Ohio The Finder ↗</a> · <a href="https://www.irs.gov/publications/p15t" target="_blank" rel="noopener noreferrer">IRS 2026 withholding ↗</a></p></section></div>`}
-function fiExport(){const p=fiCompute(),rows=[['Item','Amount / status'],['Tax year','2026'],['Work state',fiSettings.workState],['Work ZIP',fiSettings.workZip],['Residence state',fiSettings.residenceState],['Home ZIP',fiSettings.homeZip],['Gross earnings',p.gross.toFixed(2)],['Federal income tax: annualized illustration',p.federal.toFixed(2)],['Social Security',p.ss.toFixed(2)],['Medicare',p.medicare.toFixed(2)],['Additional Medicare',p.extraMedicare.toFixed(2)],['State tax',p.state===null?'NOT CALCULATED':p.state.toFixed(2)],['Local tax',p.local===null?'NOT CALCULATED':p.local.toFixed(2)],['Other deductions',(p.other+p.pretax).toFixed(2)],['Balance before unknown taxes',p.remaining.toFixed(2)],['Not official payroll','YES']];const safe=v=>{let t=String(v);if(/^[\s]*[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"'};const blob=new Blob([rows.map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Fire-Ice-Take-Home-Estimate-2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+${fiSettings.more?`<div class="form-grid" style="margin-top:16px">${fiOptional('State withholding from actual paycheck ($)','state','Optional override. Leave blank to use the estimate.')}${fiOptional('Local / school withholding ($)','local','Optional override. Leave blank to use the estimate.')}${fiOptional('Local tax rate (%)','localPct','Your city/county rate. Blank uses a typical estimate for your state.')}${fiOptional('Federal withholding from actual paycheck ($)','federal','Overrides the federal estimate.')}${fiOptional('Pre-tax deductions ($)','pretax','Example: health insurance or 401(k) for this period.')}${fiOptional('Other after-tax deductions ($)','other','Optional')}${fiOptional('Previous 2026 Social Security wages ($)','ytd','Zero for a new employee with no earlier 2026 wages.')}</div><button class="primary" type="submit">Save details</button>`:''}
+<p class="help" style="margin-top:12px">Your ZIP is used for a postal-city lookup (Zippopotam.us), not a tax-jurisdiction lookup. Tax preferences are stored in this browser, not synchronized to Supabase.</p></form></section>
+<section class="statgrid" style="margin-bottom:22px"><div class="card stat"><p>Gross earnings</p><strong>${fmt(p.gross)}</strong><small>${p.rows.length} logged shift${p.rows.length===1?'':'s'} · ${fiNice(p.win.start)} – ${fiNice(p.win.end)}</small></div><div class="card stat"><p>Total taxes${p.deductions>0?' &amp; deductions':''}</p><strong>${fmt(p.totalTax+p.deductions)}</strong><small>${fiPct(p.totalTax+p.deductions,p.gross)} of gross</small></div><div class="card stat fi-net"><p>Take-home pay</p><strong>${fmt(p.takeHome)}</strong><small>Estimated money in your hands</small></div></section>
+<div class="twocol"><section class="card panel"><h2>Paycheck breakdown — every tax</h2><div class="summary fi-row"><strong>Gross earnings</strong><strong>${fmt(p.gross)}</strong></div>${p.lines.map(l=>`<div class="fi-tax"><div class="summary"><span><i class="fi-dot" style="background:${l.color}"></i>${esc(l.label)}<small>${esc(l.note)}</small></span><b>− ${fmt(l.amount)}<small>${fiPct(l.amount,p.gross)}</small></b></div><div class="fi-bar"><span style="width:${p.gross>0?Math.min(100,l.amount/p.gross*100):0}%;background:${l.color}"></span></div></div>`).join('')}${p.pretax>0?`<div class="summary"><span>Pre-tax deductions</span><b>− ${fmt(p.pretax)}</b></div>`:''}${p.other>0?`<div class="summary"><span>Other deductions</span><b>− ${fmt(p.other)}</b></div>`:''}<div class="summary fi-row fi-total"><strong>Estimated take-home</strong><strong>${fmt(p.takeHome)}</strong></div><div class="inline-actions" style="margin-top:14px"><button class="secondary" data-action="print-stub">🖨 Print / save paystub</button><button class="secondary" data-action="takehome-csv">↓ Export estimate CSV</button></div></section>
+<section class="card panel"><h2>Where your pay goes</h2>${fiDonut(p)}</section></div>
+<div style="margin-top:20px">${fiPaystub(p)}</div>
+<div class="twocol"><section class="card panel"><h2>Shifts in this pay period</h2>${p.rows.length?p.rows.map(s=>{const b=shiftPay(s);return `<div class="summary"><span>${fiNice(s.date)}<small>${Number(s.hours||0).toFixed(2)} h${b.overtime>0?` · incl. ${b.overtime.toFixed(2)} h overtime`:''}</small></span><b>${fmt(b.total)}</b></div>`}).join(''):'<p class="muted">No shifts logged for this period.</p>'}</section>
+<section class="card panel"><h2>How this is calculated</h2><p><strong>Federal:</strong> 2026 brackets and standard deduction, applied to your pay as if it continued all year (an estimate of withholding, not your W-4).</p><p><strong>Social Security / Medicare:</strong> 6.2% up to $184,500 and 1.45% on all wages (+0.9% over $200,000).</p><p><strong>${esc(stateName)}:</strong> ${FI_ST[fiSettings.workState]?'simplified 2026 state income-tax brackets and standard deduction.':'no state income tax on wages.'}${fiSettings.residenceState!==fiSettings.workState?' Because your home state differs, the higher of the two states is used.':''}</p><p><strong>Payroll programs &amp; local:</strong> state disability/paid-leave charges and a typical local-tax estimate are included where they exist. Enter your real city or county rate under "I have a paystub".</p><div class="warning">Estimate only. Your employer's actual withholding can differ because of your W-4, local taxes, credits and benefit deductions. Enter your first real paystub values to fine-tune it.</div><p class="help"><a href="https://thefinder.tax.ohio.gov/" target="_blank" rel="noopener noreferrer">Ohio The Finder ↗</a> · <a href="https://www.irs.gov/publications/p15t" target="_blank" rel="noopener noreferrer">IRS 2026 withholding ↗</a></p></section></div>`;
+}
+function fiExport(){
+ const p=fiCompute(),rows=[['Item','Amount'],['Tax year','2026'],['Pay period',p.win.start+' to '+p.win.end],['Pay frequency',FI_FREQ[fiSettings.freq]?.label||''],['Work state',fiSettings.workState],['Work ZIP',fiSettings.workZip],['Residence state',fiSettings.residenceState],['Gross earnings',p.gross.toFixed(2)],...p.lines.map(l=>[l.label,l.amount.toFixed(2)]),['Pre-tax deductions',p.pretax.toFixed(2)],['Other deductions',p.other.toFixed(2)],['Estimated take-home',p.takeHome.toFixed(2)],['Not official payroll','YES']];
+ const safe=v=>{let t=String(v);if(/^[\s]*[=+@-]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"'};
+ const blob=new Blob([rows.map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Fire-Ice-Take-Home-Estimate-2026.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 
 function analyticsCsv(){const data=analyticsData(),csvSafe=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const head=['Month','Shift count','Regular hours','Overtime hours','Regular earnings','Overtime earnings','Estimated gross earnings'];const rows=data.map(d=>[d.key,d.shifts,d.regularHours.toFixed(2),d.otHours.toFixed(2),d.regularPay.toFixed(2),d.otPay.toFixed(2),d.total.toFixed(2)]);const blob=new Blob(['\ufeff'+[head,...rows].map(r=>r.map(csvSafe).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Fire_Ice_Analytics_'+today()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
@@ -458,7 +621,7 @@ document.addEventListener('input',e=>{const f=e.target.closest('#takehome-form')
 document.addEventListener('change',e=>{const f=e.target.closest('#takehome-form');if(!f||e.target.id==='fi-same'||!e.target.name)return;const k=e.target.name;if(k in FI_DEFAULT){fiSettings[k]=e.target.value;if(k==='workState'){fiZipResults.work=null;fiZipErrors.work='';if(fiSettings.sameLocation)fiSettings.residenceState=fiSettings.workState;}if(k==='residenceState'){fiZipResults.home=null;fiZipErrors.home='';}fiSaveSettingsSilently();if((k==='workState'&&fiSettings.workZip.length===5)||(k==='residenceState'&&fiSettings.homeZip.length===5))fiLookupZip(k==='workState'?'work':'home');else render();}});
 document.addEventListener('change',e=>{if(e.target.id==='fi-same'){const f=e.target.closest('form');const work=f.querySelector('[name=workState]')?.value||fiSettings.workState;fiSettings.workState=work;fiSettings.workZip=f.querySelector('[name=workZip]')?.value||'';fiSettings.sameLocation=e.target.checked;if(fiSettings.sameLocation){fiSettings.residenceState=work;fiSettings.homeZip=fiSettings.workZip;}fiSaveSettingsSilently();render();}});
 document.addEventListener('submit',e=>{if(e.target.id==='takehome-form'){e.preventDefault();const f=new FormData(e.target);const prevWork=fiSettings.workState,prevHome=fiSettings.residenceState;for(const k of Object.keys(FI_DEFAULT)){if(k!=='sameLocation'&&f.has(k))fiSettings[k]=String(f.get(k));}fiSettings.sameLocation=f.has('sameLocation');if(fiSettings.sameLocation){fiSettings.residenceState=fiSettings.workState;fiSettings.homeZip=fiSettings.workZip;}if(prevWork!==fiSettings.workState){fiZipResults.work=null;fiZipErrors.work='';}if(prevHome!==fiSettings.residenceState){fiZipResults.home=null;fiZipErrors.home='';}try{localStorage.setItem('fireice_takehome_2026_'+session.user.id,JSON.stringify(fiSettings));notice='Tax estimate settings saved in this browser.';}catch{notice='Storage unavailable; settings will not persist.';}render();return;}if(e.target.id==='filter-form'){e.preventDefault();const d=new FormData(e.target);filterStart=String(d.get('start')||'');filterEnd=String(d.get('end')||'');filterQuery=String(d.get('query')||'').trim();filterKind=String(d.get('kind')||'all');render();return;} if(['auth-form','profile-form','rate-form','shift-form'].includes(e.target.id)){e.preventDefault();if(e.target.id==='auth-form')login(e.target);else submit(e.target)}});
-document.addEventListener('click',async e=>{const ck=e.target.closest('[data-clock]');if(ck){await clockAction(ck.dataset.clock);return;}const quick=e.target.closest('[data-action]')?.dataset.action;if(quick==='takehome-csv'){fiExport();return;}if(quick==='tax-advanced'){fiSettings.more=!fiSettings.more;render();return;}if(quick==='analytics-csv'){analyticsCsv();return;}if(quick==='setup-clock'){openClockSetup();return;}if(quick==='csv'){exportCsv();return;}if(quick==='clear-filters'){filterStart='';filterEnd='';filterQuery='';filterKind='all';render();return;} const m=e.target.closest('[data-mode]');if(m){mode=m.dataset.mode;notice='';render();return}const pg=e.target.closest('[data-page]');if(pg){page=pg.dataset.page;notice='';render();return}const shift=e.target.closest('[data-delete-shift]');if(shift&&confirm('Delete this shift?')){const {error}=await client.from('shifts').delete().eq('id',shift.dataset.deleteShift);if(error){notice=error.message;render()}else{notice='Shift deleted.';await load()}return}const ac=e.target.closest('[data-action]')?.dataset.action;if(ac==='signout'){notice='';await client.auth.signOut();}if(ac==='dismiss'){notice='';render()}});
+document.addEventListener('click',async e=>{const ck=e.target.closest('[data-clock]');if(ck){await clockAction(ck.dataset.clock);return;}const quick=e.target.closest('[data-action]')?.dataset.action;if(quick==='takehome-csv'){fiExport();return;}if(quick==='tax-advanced'){fiSettings.more=!fiSettings.more;render();return;}if(quick==='print-stub'){window.print();return;}if(quick==='analytics-csv'){analyticsCsv();return;}if(quick==='setup-clock'){openClockSetup();return;}if(quick==='csv'){exportCsv();return;}if(quick==='clear-filters'){filterStart='';filterEnd='';filterQuery='';filterKind='all';render();return;} const m=e.target.closest('[data-mode]');if(m){mode=m.dataset.mode;notice='';render();return}const pg=e.target.closest('[data-page]');if(pg){page=pg.dataset.page;notice='';render();return}const shift=e.target.closest('[data-delete-shift]');if(shift&&confirm('Delete this shift?')){const {error}=await client.from('shifts').delete().eq('id',shift.dataset.deleteShift);if(error){notice=error.message;render()}else{notice='Shift deleted.';await load()}return}const ac=e.target.closest('[data-action]')?.dataset.action;if(ac==='signout'){notice='';await client.auth.signOut();}if(ac==='dismiss'){notice='';render()}});
 start();</script><script>
 (()=>{
  const overlay=document.getElementById('database-setup-overlay');
