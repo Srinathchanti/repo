@@ -200,22 +200,24 @@ do $$ begin
   end if;
 end $$;
 
--- Safe self-repair for existing authenticated accounts (no access to other users).
+
+-- Recover the signed-in user&#x27;s own employee row, without exposing anyone else&#x27;s records.
 create or replace function public.ensure_my_employee() returns uuid
 language plpgsql security definer set search_path = &#x27;&#x27; as $$
 declare eid uuid; uid uuid := auth.uid();
 begin
   if uid is null then raise exception &#x27;Authentication required&#x27;; end if;
-  insert into public.profiles(id, full_name, role)
-  select id, coalesce(raw_user_meta_data-&gt;&gt;&#x27;full_name&#x27;,&#x27;&#x27;), &#x27;employee&#x27;
-  from auth.users where id = uid on conflict (id) do nothing;
+  insert into public.profiles(id,full_name,role)
+  select id,coalesce(raw_user_meta_data-&gt;&gt;&#x27;full_name&#x27;,&#x27;&#x27;),&#x27;employee&#x27;
+  from auth.users where id=uid on conflict(id) do nothing;
   insert into public.employees(employee_code,full_name,email,auth_user_id)
   select &#x27;FI-&#x27; || left(replace(id::text,&#x27;-&#x27;,&#x27;&#x27;),20),
     coalesce(nullif(raw_user_meta_data-&gt;&gt;&#x27;full_name&#x27;,&#x27;&#x27;),&#x27;Staff Member&#x27;),
-    coalesce(email,&#x27;&#x27;), id
-  from auth.users where id = uid
-  on conflict (auth_user_id) do nothing;
-  select id into eid from public.employees where auth_user_id = uid;
+    coalesce(email,&#x27;&#x27;),id
+  from auth.users where id=uid
+  on conflict(auth_user_id) do nothing;
+  select id into eid from public.employees where auth_user_id=uid;
+  if eid is null then raise exception &#x27;Could not create employee record&#x27;; end if;
   return eid;
 end;
 $$;
@@ -236,7 +238,7 @@ order by table_name,column_name;
 </template><button class="setup-launch" id="open-database-setup" type="button">⚙ Database setup</button>
 <div class="setup-overlay" id="database-setup-overlay" role="dialog" aria-modal="true" aria-labelledby="setup-heading">
  <div class="setup-dialog"><h2 id="setup-heading">One-time Supabase database setup</h2>
- <p>The entire website is in this HTML file. Supabase tables and security rules <strong>cannot be installed automatically from a public webpage</strong>. Back up your database first. This clean setup replaces the four empty Fire & Ice tables but preserves Supabase Auth accounts. Before registering, copy this SQL into <strong>Supabase → SQL Editor</strong> and run it once after backing up existing data. It can modify existing Fire & Ice tables and policies.</p>
+ <p>The entire website is in this HTML file. Supabase tables and security rules <strong>cannot be installed automatically from a public webpage</strong>. Back up your database first. This clean setup replaces the four empty Fire & Ice tables, creates the employee-repair function, and preserves Supabase Auth accounts. If these tables contain data, the SQL deliberately aborts. Before registering, copy this SQL into <strong>Supabase → SQL Editor</strong> and run it once after backing up existing data. It can modify existing Fire & Ice tables and policies.</p>
  <p>Uses your configured Supabase project. Never paste your service-role or secret key into this file.</p>
  <pre class="setup-code" id="setup-sql-preview"></pre>
  <div class="setup-actions"><button type="button" class="secondary" id="close-database-setup">Close</button><button type="button" class="primary" id="copy-database-setup">Copy setup SQL</button></div>
@@ -265,18 +267,20 @@ function render(){if(!session)auth();else layout()}
 async function load(){if(!session)return;try{const uid=session.user.id;let results=await Promise.all([client.from('employees').select('*').eq('auth_user_id',uid).maybeSingle(),client.from('employee_rates').select('id,employee_id,hourly_rate,effective_date').order('effective_date',{ascending:false}),client.from('shifts').select('*').order('date',{ascending:false})]);for(const x of results)if(x.error)throw x.error;employee=results[0].data;rates=results[1].data||[];shifts=results[2].data||[];
 if(!employee){
   const repair=await client.rpc('ensure_my_employee');
-  if(!repair.error){
+  if(repair.error){
+    notice='Profile repair failed: '+repair.error.message+' (code: '+(repair.error.code||'unknown')+'). Run Database setup SQL and refresh.';
+  } else {
     const retry=await client.from('employees').select('*').eq('auth_user_id',uid).maybeSingle();
     if(retry.error)throw retry.error;
     employee=retry.data;
   }
-  if(!employee)notice='Account setup incomplete. Open Database setup, copy the SQL, and run it once in your Supabase SQL Editor. Then sign out and sign in again.';
-  else notice='Your employee profile is ready.';
-}else if(notice.includes('Employee profile missing')||notice.includes('Account setup incomplete'))notice='';
+  if(employee){notice='';}
+  else if(!repair.error){notice='No linked employee record found. Run Database setup SQL in Supabase and sign in again.';}
+}else if(employee && (notice.includes('profile')||notice.includes('record')||notice.includes('SQL')))notice='';
 render()}catch(err){notice='Unable to load your records: '+err.message+'. Check the Supabase setup SQL.';render()}}
 async function start(){if(!client){render();return}const {data,error}=await client.auth.getSession();if(error)notice=error.message;session=data?.session||null;render();if(session)await load();client.auth.onAuthStateChange((event,next)=>{const old=session?.user?.id;session=next;if(!next){employee=null;rates=[];shifts=[];notice='';render()}else if(next.user.id!==old){queueMicrotask(load)}})}
 async function login(form){busy=true;notice='';const d=new FormData(form);const email=String(d.get('email')).trim().toLowerCase(),password=String(d.get('password')||'');render();try{if(mode==='login'){let {error}=await client.auth.signInWithPassword({email,password});if(error)throw error}else if(mode==='register'){let {error}=await client.auth.signUp({email,password,options:{data:{full_name:String(d.get('full_name')).trim()}}});if(error)throw error;mode='login';notice='Account created. If email confirmation is enabled, verify your email before signing in.'}else{let {error}=await client.auth.resetPasswordForEmail(email);if(error)throw error;notice='If this account exists, a password reset email has been sent.'}}catch(e){notice=e.message}finally{busy=false;render()}}
-async function submit(form){try{if(!employee)throw Error('Your employee record is not ready. Open Database setup and run the SQL in Supabase, then sign in again.');const f=new FormData(form);if(form.id==='profile-form'){const {error}=await client.from('employees').update({full_name:String(f.get('full_name')).trim(),job_title:String(f.get('job_title')).trim(),employment_type:String(f.get('employment_type'))}).eq('id',employee.id);if(error)throw error}else if(form.id==='rate-form'){const rate=Number(f.get('hourly_rate'));if(!Number.isFinite(rate)||rate<0||rate>10000)throw Error('Invalid rate');const {error}=await client.rpc('set_my_rate',{p_hourly_rate:rate,p_effective_date:String(f.get('effective_date'))});if(error)throw error}else if(form.id==='shift-form'){const date=String(f.get('date')),a=String(f.get('start_time')),b=String(f.get('end_time')),breaks=Number(f.get('break_minutes'));const h=hours(a,b,breaks);if(!h||h>24||breaks<0||breaks>=1440)throw Error('Check shift times and break minutes');const {error}=await client.from('shifts').insert({auth_user_id:session.user.id,date,start_time:a,end_time:b,break_minutes:breaks,hours:Math.round(h*100)/100});if(error)throw error}notice='Saved successfully.';await load()}catch(e){notice=e.message;render()}}
+async function submit(form){try{if(!employee)throw Error('Your employee record is not ready. Check the message above and run Database setup SQL in your Supabase project.');const f=new FormData(form);if(form.id==='profile-form'){const {error}=await client.from('employees').update({full_name:String(f.get('full_name')).trim(),job_title:String(f.get('job_title')).trim(),employment_type:String(f.get('employment_type'))}).eq('id',employee.id);if(error)throw error}else if(form.id==='rate-form'){const rate=Number(f.get('hourly_rate'));if(!Number.isFinite(rate)||rate<0||rate>10000)throw Error('Invalid rate');const {error}=await client.rpc('set_my_rate',{p_hourly_rate:rate,p_effective_date:String(f.get('effective_date'))});if(error)throw error}else if(form.id==='shift-form'){const date=String(f.get('date')),a=String(f.get('start_time')),b=String(f.get('end_time')),breaks=Number(f.get('break_minutes'));const h=hours(a,b,breaks);if(!h||h>24||breaks<0||breaks>=1440)throw Error('Check shift times and break minutes');const {error}=await client.from('shifts').insert({auth_user_id:session.user.id,date,start_time:a,end_time:b,break_minutes:breaks,hours:Math.round(h*100)/100});if(error)throw error}notice='Saved successfully.';await load()}catch(e){notice=e.message;render()}}
 document.addEventListener('submit',e=>{if(['auth-form','profile-form','rate-form','shift-form'].includes(e.target.id)){e.preventDefault();if(e.target.id==='auth-form')login(e.target);else submit(e.target)}});
 document.addEventListener('click',async e=>{const m=e.target.closest('[data-mode]');if(m){mode=m.dataset.mode;notice='';render();return}const pg=e.target.closest('[data-page]');if(pg){page=pg.dataset.page;notice='';render();return}const shift=e.target.closest('[data-delete-shift]');if(shift&&confirm('Delete this shift?')){const {error}=await client.from('shifts').delete().eq('id',shift.dataset.deleteShift);if(error){notice=error.message;render()}else{notice='Shift deleted.';await load()}return}const ac=e.target.closest('[data-action]')?.dataset.action;if(ac==='signout'){notice='';await client.auth.signOut();}if(ac==='dismiss'){notice='';render()}});
 start();</script><script>
