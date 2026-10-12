@@ -814,7 +814,77 @@ const source=document.getElementById('ohio-edge-source').textContent;
 section.querySelector('#fi-edge-preview').textContent=source;
 section.querySelector('#fi-copy-edge').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(source);section.querySelector('#fi-copy-edge').textContent='Copied function code!'}catch{section.querySelector('#fi-copy-edge').textContent='Select and copy code below'}});
 })();
-</script><script id="fi-soft-theme-script">
+</script><style id="fi-v19-experience">
+/* Fire & Ice v19: product experience layer; existing payroll engine unchanged */
+:root{--fi-v19-forest:#273D35;--fi-v19-sage:#719889;--fi-v19-peach:#DA9477;--fi-v19-soft:#F6F4EF}
+.fi-welcome{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.85fr);gap:22px;align-items:center;background:linear-gradient(125deg,#29463d,#3a584a);border-radius:25px;padding:28px 32px;color:#fff;overflow:hidden;position:relative;margin-bottom:22px;box-shadow:0 16px 42px #1a32221a}
+.fi-welcome:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;border:44px solid #ffffff09;top:-170px;right:-50px;pointer-events:none}
+.fi-welcome .fi-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#cae0d5;font-weight:800}
+.fi-welcome h2{font-size:clamp(25px,3vw,40px);line-height:1.15;letter-spacing:-1px;margin:8px 0 10px;color:#fff}
+.fi-welcome p{color:#d8e6df;line-height:1.55;margin:0;max-width:580px}
+.fi-welcome .fi-welcome-number{font-size:clamp(29px,4vw,49px);font-weight:800;letter-spacing:-1px;line-height:1.1;color:white}
+.fi-welcome .fi-welcome-meta{font-size:12px;color:#d7e4dc;line-height:1.55}
+.fi-dashboard-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.fi-pill-action{border:1px solid #ffffff70;background:#ffffff16;color:#fff;font:inherit;font-weight:700;border-radius:12px;padding:12px 17px;cursor:pointer;min-height:44px;transition:transform .18s ease,background .18s ease}
+.fi-pill-action:hover{background:#ffffff29;transform:translateY(-2px)}
+.fi-pill-action.fi-main{background:#f0b99a;color:#253b32;border-color:#f0b99a}
+.fi-pill-action:focus-visible,.fi-cardlink:focus-visible,.fi-clock-primary:focus-visible{outline:3px solid #8accc2;outline-offset:3px}
+.fi-daily{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin:18px 0 24px}
+.fi-daily-panel{background:var(--white,#fff);border:1px solid var(--line);border-radius:21px;padding:23px;box-shadow:0 9px 25px #10233a06}
+.fi-daily-panel h3{font-size:21px;letter-spacing:-.5px;margin:0 0 8px}.fi-daily-panel p{margin:0 0 16px;color:var(--muted);line-height:1.45}
+.fi-clock-primary{background:#295144;color:#fff;border:0;border-radius:13px;padding:12px 20px;font-weight:800;min-height:44px;cursor:pointer;transition:transform .18s}
+.fi-clock-primary:hover{transform:translateY(-2px)}.fi-clock-primary:disabled{opacity:.5;cursor:not-allowed}
+.fi-clock-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#88c7a6;margin-right:6px}
+.fi-cardlink{color:#3b7562;text-decoration:none;background:transparent;border:0;padding:5px 0;font:inherit;font-weight:750;cursor:pointer}
+.fi-setup{display:flex;align-items:center;gap:13px;background:#eff5f0;border-radius:15px;padding:13px;margin-top:14px;color:#244236}
+.fi-setup strong{display:block;font-size:13px}.fi-setup small{font-size:12px;color:#4e6e62}
+.fi-explainer{font-size:12px;color:var(--muted);line-height:1.55;margin:13px 0 0}
+.fi-payhero{display:grid;grid-template-columns:1fr auto;align-items:center;gap:20px;background:linear-gradient(125deg,#e8f1e9,#fff6ec);border:1px solid #d8e4da;border-radius:22px;padding:26px 30px;margin:0 0 22px}
+.fi-payhero small{font-size:12px;color:#526f62;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.fi-payhero strong{display:block;font-size:clamp(30px,4vw,48px);letter-spacing:-1.4px;color:#2a5340}.fi-payhero p{font-size:13px;margin:5px 0;color:#486756}
+.fi-payhero .fi-payhero-link{background:#2f5948;color:white;border:0;border-radius:12px;padding:12px 17px;min-height:44px;font:inherit;font-weight:700;cursor:pointer}
+.fi-payhero .fi-payhero-link:hover{background:#234636}
+.fi-clock-widget-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.fi-live-time{font-size:clamp(28px,4vw,43px);font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.fi-quick-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.fi-quick-controls button{flex:1;min-width:130px;min-height:47px}
+.fi-dark .fi-daily-panel{background:#22342c;border-color:#385448}
+.fi-dark .fi-setup{background:#2d493b;color:#e5f4ea}.fi-dark .fi-setup small{color:#b3d3c2}
+.fi-dark .fi-cardlink{color:#acd9c2}.fi-dark .fi-clock-primary{background:#c9decf;color:#213d2c}
+.fi-dark .fi-payhero{background:linear-gradient(120deg,#29483d,#343f36);border-color:#4a6457}.fi-dark .fi-payhero small,.fi-dark .fi-payhero p{color:#c3d9cb}.fi-dark .fi-payhero strong{color:#f4f8f0}
+.fi-dark .fi-live-time{color:#e9f4eb}
+@media(max-width:880px){.fi-welcome,.fi-daily{grid-template-columns:1fr}.fi-welcome{padding:25px}.fi-welcome-number{margin-top:7px}}
+@media(max-width:550px){.fi-welcome{padding:20px;border-radius:18px}.fi-payhero{grid-template-columns:1fr;padding:20px}.fi-daily-panel{padding:18px}.fi-dashboard-actions>*{flex:1}.fi-quick-controls button{min-width:105px}}
+@media(prefers-reduced-motion:reduce){.fi-pill-action,.fi-clock-primary{transition:none}.fi-pill-action:hover,.fi-clock-primary:hover{transform:none}}
+</style>
+<script id="fi-v19-experience-script">
+// v19 adds presentation only. All existing payroll formulas, data access and clock RPCs stay unchanged.
+(()=>{
+ const originalDashboard=dashboard;
+ dashboard=function(){
+  fiLoadSettings();
+  const p=fiCompute();
+  const c=clockSession,working=c?.status==='working',onBreak=c?.status==='break';
+  const hasRate=!!currentRate(),hasZip=/^\d{5}$/.test(fiSettings.workZip||'');
+  const next=(!hasRate||!hasZip)?`<div class="fi-setup"><span aria-hidden="true">✦</span><div><strong>Finish your setup</strong><small>${!hasRate?'Add your hourly rate to estimate earnings.':'Set your work ZIP to improve location estimates.'}</small></div><button class="fi-cardlink" data-page="${!hasRate?'profile':'takehome'}">Set up →</button></div>`:'';
+  const status=working?'Working now':onBreak?'On break':'Not clocked in';
+  const welcome=`<section class="fi-welcome" aria-label="Earnings overview"><div><div class="fi-eyebrow">YOUR WORK · YOUR MONEY</div><h2>Make every hour count.</h2><p>One place to track shifts, understand earnings, and plan your paycheck.</p><div class="fi-dashboard-actions"><button class="fi-pill-action fi-main" data-page="shifts">◷ Open time clock</button><button class="fi-pill-action" data-page="takehome">↗ View paycheck</button></div></div><div><div class="fi-eyebrow">CURRENT PERIOD · PARTIAL ESTIMATE</div><div class="fi-welcome-number">${fmt(p.takeHome)}</div><div class="fi-welcome-meta">${p.gross>0?`${fmt(p.gross)} gross · ${p.rows.length} shifts`: 'Log shifts to see your estimated balance'}<br>Taxes or deductions may be missing.</div></div></section>`;
+  const day=`<section class="fi-daily" aria-label="Quick actions"><div class="fi-daily-panel"><div class="fi-clock-widget-head"><h3>Today's shift</h3><span class="pill"><span class="fi-clock-dot"></span>${status}</span></div><p>${working||onBreak?'Your shift is active. Use My Shifts to manage breaks and clock out.':'Ready when you are. Clock in to begin tracking your hours.'}</p>${c?.started_at?`<div class="fi-explainer">Started ${esc(new Date(c.started_at).toLocaleString())}</div>`:''}<div class="fi-quick-controls">${!c?`<button class="fi-clock-primary" data-clock="in">Clock in</button>`:`<button class="fi-clock-primary" data-page="shifts">Manage active shift →</button>`}<button class="secondary" data-page="shifts">Log hours manually</button></div></div><div class="fi-daily-panel"><h3>Paycheck at a glance</h3><p>Your current period: ${esc(fiNice(p.win.start))} – ${esc(fiNice(p.win.end))}</p><div class="summary"><span>Gross earnings</span><b>${fmt(p.gross)}</b></div><div class="summary"><span>Included deductions</span><b>${fmt(p.totalTax+p.deductions)}</b></div><div class="summary"><strong>Partial net estimate</strong><strong>${fmt(p.takeHome)}</strong></div><button class="fi-cardlink" data-page="takehome">See deduction details →</button>${next}</div></section>`;
+  return welcome+day+originalDashboard();
+ };
+ const originalTakeHome=takeHomePage;
+ takeHomePage=function(){
+  const old=originalTakeHome();
+  const p=fiCompute();
+  const summary=`<section class="fi-payhero" aria-label="Estimated paycheck highlight"><div><small>Your paycheck outlook · ${esc(fiSettings.workState)}</small><strong>${fmt(p.takeHome)}</strong><p>Partial net estimate · ${fmt(p.gross)} gross · ${p.rows.length} logged shift${p.rows.length===1?'':'s'}</p><p>Unverified deductions may apply. Not an official paystub.</p></div><button class="fi-payhero-link" data-page="shifts">View shifts →</button></section>`;
+  const anchor='<section class="card panel"';
+  const at=old.indexOf(anchor);
+  return at>=0?old.slice(0,at)+summary+old.slice(at):summary+old;
+ };
+ const originalClock=clockWidget;
+ clockWidget=function(){let html=originalClock();return html.replace('LIVE TIME CLOCK','MY LIVE TIME CLOCK');};
+})();
+</script>
+<script id="fi-soft-theme-script">
 (()=>{
  const STORE='fireice_soft_minimal_theme';
  const apply=t=>{document.body.classList.toggle('fi-dark',t==='dark');document.querySelector('#fi-soft-toggle').textContent=t==='dark'?'☀ Light mode':'☾ Dark mode';document.querySelector('#fi-soft-toggle').setAttribute('aria-label','Switch to '+(t==='dark'?'light':'dark')+' appearance');};
