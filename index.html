@@ -46,6 +46,63 @@
 @media(max-width:760px){.stub-grid{grid-template-columns:1fr}.fi-donut{width:180px;height:180px}.fi-donut>div{width:120px;height:120px}}
 @media print{body *{visibility:hidden}#fi-paystub,#fi-paystub *{visibility:visible}#fi-paystub{position:absolute;left:0;top:0;width:100%;border:0;box-shadow:none}}
 </style>
+<style id="soft-minimal-design">
+/* Fire & Ice · Soft Minimal UI. Presentation only; all source payroll/database logic retained. */
+:root{--fire:#d97f65;--ice:#769d97;--ink:#2d3734;--muted:#79837d;--bg:#f7f5f0;--line:#eae8e0;--white:#fffdf9;--fi-surface:#fffdf9;--fi-soft:#f1eee7;--fi-shadow:0 15px 45px rgba(40,50,44,.055);color-scheme:light}
+html{scroll-behavior:smooth}body{background:var(--bg);color:var(--ink);font-family:'Outfit',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body.fi-dark{--fire:#f2a58d;--ice:#a2cec3;--ink:#f1f0e9;--muted:#acb8ad;--bg:#171f1d;--line:#34423b;--white:#222d28;--fi-surface:#222d28;--fi-soft:#293630;--fi-shadow:0 16px 50px rgba(0,0,0,.13);color-scheme:dark}
+body.fi-dark input,body.fi-dark select,body.fi-dark textarea{color:var(--ink);background:var(--fi-soft);border-color:var(--line)}
+body.fi-dark .sidebar,body.fi-dark .topbar,body.fi-dark .card,body.fi-dark .auth-card,body.fi-dark .modal,body.fi-dark .setup-dialog{background:var(--fi-surface);color:var(--ink)}
+body.fi-dark .muted,body.fi-dark .help,body.fi-dark .panel p,body.fi-dark .stat p,body.fi-dark .stat small,body.fi-dark .summary small{color:var(--muted)}
+body.fi-dark .notice,body.fi-dark .warning{background:#37342b;color:#e9c8a7;border-color:#63533e}
+body.fi-dark .secondary{background:var(--fi-soft);border-color:var(--line);color:var(--ink)}
+body.fi-dark th,body.fi-dark tbody tr:hover{background:var(--fi-soft)}
+body.fi-dark td,body.fi-dark th{border-color:var(--line)}
+body.fi-dark .fi-net,body.fi-dark .stub-net{background:#24443c;border-color:#376e5d;color:#c5f0de}body.fi-dark .fi-net strong,body.fi-dark .stub-net strong,body.fi-dark .fi-total{color:#a2e5c8}
+body.fi-dark .fi-donut>div{background:var(--fi-surface)}body.fi-dark .fi-bar{background:#3a4540}
+body.fi-dark .fi-legend li,body.fi-dark .kv,body.fi-dark .summary{border-color:var(--line)}
+body.fi-dark .ohio-lookup-card{background:#263c3c;border-color:#365955;color:#d9ede8}
+body.fi-dark .auth-right{background:var(--bg)}body.fi-dark .auth-card .muted{color:var(--muted)}
+body.fi-dark .setup-code{background:#111a17;color:#e4ede6}body.fi-dark .pill{background:#2f4840;color:#b7e9da}
+body.fi-dark .nav.active{background:rgba(162,206,195,.15);color:#c2eee0}
+body.fi-dark #fi-paystub{border-color:var(--line)}
+*:focus-visible{outline:3px solid var(--ice)!important;outline-offset:3px}
+a{color:var(--ice)}button,input,select{transition:box-shadow .2s,border-color .2s,background-color .2s,transform .2s}button:hover:not(:disabled){filter:brightness(.975)}button:active:not(:disabled){transform:translateY(1px)}
+.primary{background:linear-gradient(125deg,#cb745d,#e3a288);border-radius:13px;box-shadow:0 7px 20px rgba(195,110,83,.15);color:#fff}
+.secondary{background:var(--fi-surface);color:var(--ink);border:1px solid var(--line);border-radius:13px}
+.field input,.field select,.search input,.filter,.filters input,.filters select,.analytics-controls select{background:var(--fi-surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;min-height:44px}
+.field input:focus,.field select:focus,.search input:focus{border-color:var(--ice);box-shadow:0 0 0 4px rgba(118,157,151,.16)}
+.eyebrow{color:var(--fire);letter-spacing:2px;font-size:11px}.brand{letter-spacing:-1.1px;font-weight:800}.brand .flame{color:var(--fire)}.brand b{color:var(--ice)}
+.shell{grid-template-columns:258px minmax(0,1fr)}.sidebar{background:#24352f!important;color:#ecf1e9!important;border-right:1px solid rgba(255,255,255,.06);padding:32px 17px;gap:25px;position:sticky;top:0;height:100vh;overflow:auto}
+.sidebar .brand{color:#fff;font-size:25px;padding:7px 11px 15px}.sidebar small{color:#91a89f;padding-left:14px}.sidebar nav{display:flex;flex-direction:column;gap:5px}
+.sidebar .nav{color:#b8c9c0;white-space:normal;border-radius:13px;padding:14px 16px;margin:0;font-size:14px;line-height:1.3}.sidebar .nav:hover{background:#364c42;color:#fff}
+.sidebar .nav.active{background:rgba(243,214,185,.13);color:#f4d3b4;box-shadow:inset 3px 0 0 #e7af8e}
+.sidebar-bottom{border-color:rgba(255,255,255,.1);padding:20px 8px 6px}.sidebar-bottom .muted{color:#91a89f}.sidebar-bottom .nav{padding:11px 8px}
+.topbar{height:76px;background:var(--fi-surface);border-bottom:1px solid var(--line);padding:0 35px}.content{padding:38px 35px 80px;max-width:1330px}
+.page-head{margin-bottom:25px}.page-head h1{font-size:clamp(34px,3.8vw,49px);letter-spacing:-1.7px}.page-head h1 em{color:var(--fire)}.page-head p{max-width:740px;line-height:1.6}
+.card{background:var(--fi-surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--fi-shadow)}.panel{padding:26px}.panel h2{font-size:24px;letter-spacing:-.6px;margin:0 0 12px}
+.statgrid{gap:16px}.stat{padding:24px;min-width:0}.stat p{font-size:13px}.stat strong{font-size:clamp(26px,3vw,37px);overflow-wrap:anywhere;display:block}.stat .symbol{background:#f7ece5;color:#b8755e}.stat .symbol.ice{background:#e8f2ed;color:#577e74}
+body.fi-dark .stat .symbol{background:#3f3931}body.fi-dark .stat .symbol.ice{background:#29443e}
+.notice{background:#fbf3e9;border:1px solid #f2e5d5;color:#83644c;border-radius:14px}.warning{background:#fff7e9;color:#97714f;border-radius:12px}.pill{background:#eaf3ed;color:#557d70}
+.auth{background:var(--bg);grid-template-columns:minmax(290px,.82fr) minmax(320px,1fr)}.auth-left{background:#263b32;padding:54px;isolation:isolate}.auth-left:after{width:530px;height:530px;border:1px solid rgba(238,219,185,.2);background:radial-gradient(circle at center,rgba(237,170,135,.20),transparent 63%);right:-245px;bottom:-210px;border-radius:50%;z-index:-1}
+.auth-left:before{content:'✦';position:absolute;top:24%;right:13%;font-size:70px;color:#a7cbb9;opacity:.15}.auth-left h1{font-size:clamp(43px,5vw,76px);letter-spacing:-2.9px;line-height:1.07}.auth-left h1 span{color:#b9d7cb}.auth-left p{color:#b9cbbd}.auth-right{background:var(--bg);padding:32px}.auth-card{background:var(--fi-surface);max-width:470px;width:100%;padding:clamp(26px,4vw,46px);border:1px solid var(--line);border-radius:27px;box-shadow:0 28px 70px rgba(39,52,44,.065)}.auth-card h2{font-size:32px}.auth-links{gap:7px}.link{color:var(--fire)}
+.clock-panel{border:1px solid var(--line);background:linear-gradient(118deg,var(--fi-surface),var(--fi-soft));padding:29px}.clock-state{font-size:29px}.clock-actions{gap:11px}.clock-actions button{min-height:46px;border-radius:12px}
+.analytics-stat{padding:21px}.analytics-chart{overflow:hidden}.analytics-stat strong{color:var(--ink)}
+.fi-net{background:#eaf4ee;border-color:#cfdfd5}.fi-net strong,.stub-net strong{color:#4d826e}.stub-net{background:#eaf4ee;border-color:#cfdfd5}.fi-total{color:#4d826e}#fi-paystub{border:1px solid var(--line)}
+.fi-donut{box-shadow:0 10px 24px rgba(42,70,55,.08);border:5px solid var(--fi-surface)}.fi-donut>div{background:var(--fi-surface)}
+.fi-legend li{border-color:var(--line)}.fi-bar{background:var(--fi-soft)}.fi-chart{gap:20px}
+.setup-launch{background:#425b4f;color:#fff;border-color:#658175;bottom:18px;right:18px;box-shadow:0 9px 25px #1113}
+.fi-soft-hero{background:linear-gradient(112deg,#dcece2,#f7eee4 80%);border:1px solid #e6e7db;color:#293f35;border-radius:26px;padding:25px 30px;margin:0 0 23px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;box-shadow:var(--fi-shadow)}
+.fi-soft-hero .eyebrow{color:#a06c55}.fi-soft-hero h2{font-size:clamp(29px,4vw,44px);margin:7px 0;line-height:1.1;letter-spacing:-1px}.fi-soft-hero p{margin:0;font-size:13px;color:#648074}.fi-soft-hero .fi-hero-art{font-size:51px;opacity:.62}.fi-soft-hero .fi-hero-chip{display:inline-block;margin-top:15px;padding:8px 12px;border-radius:50px;background:#ffffffa8;color:#466253;font-size:12px;font-weight:700}
+body.fi-dark .fi-soft-hero{background:linear-gradient(112deg,#344e43,#3e3e35);border-color:#536052;color:#f4f1e7}body.fi-dark .fi-soft-hero p{color:#bed2c3}body.fi-dark .fi-soft-hero .fi-hero-chip{background:#ffffff18;color:#dcebdd}
+.fi-soft-payhero{margin:0 0 22px;background:linear-gradient(112deg,#29483d,#4c7460);color:#fff;border-radius:24px;padding:25px 30px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.fi-soft-payhero h2{margin:8px 0 4px;font-size:clamp(31px,4vw,46px);letter-spacing:-1.5px}.fi-soft-payhero .eyebrow{color:#c9e7d3}.fi-soft-payhero p{margin:0;color:#d0e0d7;font-size:13px}.fi-soft-payhero .fi-soft-payicon{font-size:49px;opacity:.55}
+.fi-theme-toggle{position:fixed;right:18px;bottom:70px;z-index:96;background:#fffdf9;color:#364b40;border:1px solid #d9e4d9;box-shadow:0 9px 24px #14221a20;padding:10px 15px;border-radius:999px;font-weight:700;font-size:13px;min-height:44px}
+body.fi-dark .fi-theme-toggle{background:#334b3d;color:#f4f6ea;border-color:#567262}
+.fi-fade-in{animation:fiSoftIn .4s ease-out both}@keyframes fiSoftIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1000px){.shell{grid-template-columns:210px minmax(0,1fr)}.sidebar{padding:24px 12px}.content{padding:27px 23px 90px}.topbar{padding:0 23px}.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.shell{display:block;padding-bottom:79px}.sidebar{position:relative;height:auto;overflow:visible;padding:12px 16px;display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:0}.sidebar .brand{padding:3px 0;font-size:21px}.sidebar small,.sidebar-bottom{display:none}.sidebar nav{position:fixed;z-index:98;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:#24352f;padding:8px max(5px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom));border-top:1px solid #ffffff1b;box-shadow:0 -10px 28px #13261c22}.sidebar nav .nav{display:flex;justify-content:center;align-items:center;text-align:center;white-space:normal;width:100%;padding:10px 3px;min-height:52px;line-height:1.3;font-size:10px;overflow-wrap:anywhere}.sidebar nav .nav.active{box-shadow:inset 0 3px 0 #e7af8e}.topbar{height:53px;padding:0 15px;font-size:11px}.content{padding:22px 15px 85px}.page-head h1{font-size:35px}.page-head{align-items:flex-start}.page-head .inline-actions{justify-content:flex-start}.statgrid,.detail-grid,.analytics-grid{grid-template-columns:1fr}.fi-soft-hero,.fi-soft-payhero{padding:22px;grid-template-columns:1fr auto}.fi-soft-hero .fi-hero-art,.fi-soft-payhero .fi-soft-payicon{font-size:32px}.twocol{grid-template-columns:1fr}.panel{padding:21px}.clock-actions{display:grid;grid-template-columns:1fr 1fr}.clock-actions button{min-width:0}.fi-theme-toggle{bottom:100px;right:12px}.setup-launch{bottom:101px;right:auto;left:12px;padding:10px 13px;font-size:11px}.auth{display:block}.auth-left{min-height:0;padding:20px 24px}.auth-left .hero,.auth-left>small,.auth-left:after{display:none}.auth-right{min-height:calc(100vh - 75px);padding:25px 15px}.auth-card{padding:29px 23px}.auth-card h2{font-size:30px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
 </head><body><template id="fireice-setup-sql">-- FIRE &amp; ICE: CLEAN SELF-SERVICE DATABASE SETUP
 -- For the dedicated Supabase project ckkkosysrfllnppjmldd.
 -- IMPORTANT: Back up your database first. This REPLACES the four named public tables.
@@ -658,6 +715,13 @@ document.addEventListener('change',e=>{const f=e.target.closest('#takehome-form'
 document.addEventListener('change',e=>{if(e.target.id==='fi-same'){const f=e.target.closest('form');const work=f.querySelector('[name=workState]')?.value||fiSettings.workState;fiSettings.workState=work;fiSettings.workZip=f.querySelector('[name=workZip]')?.value||'';fiSettings.sameLocation=e.target.checked;if(fiSettings.sameLocation){fiSettings.residenceState=work;fiSettings.homeZip=fiSettings.workZip;}fiSettings.state='';fiSettings.stateOverrideJurisdiction='';fiSaveSettingsSilently();render();}});
 document.addEventListener('submit',e=>{if(e.target.id==='takehome-form'){e.preventDefault();const f=new FormData(e.target);const prevWork=fiSettings.workState,prevHome=fiSettings.residenceState;for(const k of Object.keys(FI_DEFAULT)){if(k!=='sameLocation'&&f.has(k))fiSettings[k]=String(f.get(k));}fiSettings.sameLocation=f.has('sameLocation');if(fiSettings.sameLocation){fiSettings.residenceState=fiSettings.workState;fiSettings.homeZip=fiSettings.workZip;}if(prevWork!==fiSettings.workState||prevHome!==fiSettings.residenceState){fiSettings.state='';fiSettings.stateOverrideJurisdiction='';}if(fiSettings.state!=='')fiSettings.stateOverrideJurisdiction=`${fiSettings.workState}:${fiSettings.residenceState}`;if(prevWork!==fiSettings.workState){fiZipResults.work=null;fiZipErrors.work='';}if(prevHome!==fiSettings.residenceState){fiZipResults.home=null;fiZipErrors.home='';}try{localStorage.setItem('fireice_takehome_2026_'+session.user.id,JSON.stringify(fiSettings));notice='Tax estimate settings saved in this browser.';}catch{notice='Storage unavailable; settings will not persist.';}render();return;}if(e.target.id==='filter-form'){e.preventDefault();const d=new FormData(e.target);filterStart=String(d.get('start')||'');filterEnd=String(d.get('end')||'');filterQuery=String(d.get('query')||'').trim();filterKind=String(d.get('kind')||'all');render();return;} if(['auth-form','profile-form','rate-form','shift-form'].includes(e.target.id)){e.preventDefault();if(e.target.id==='auth-form')login(e.target);else submit(e.target)}});
 document.addEventListener('click',async e=>{const ck=e.target.closest('[data-clock]');if(ck){await clockAction(ck.dataset.clock);return;}const quick=e.target.closest('[data-action]')?.dataset.action;if(quick==='takehome-csv'){fiExport();return;}if(quick==='reset-ca-tax'){fiSettings.state='';fiSettings.stateOverrideJurisdiction='';fiSaveSettingsSilently();notice='Automatic California state income-tax estimate enabled.';render();return;}if(quick==='tax-advanced'){fiSettings.more=!fiSettings.more;render();return;}if(quick==='print-stub'){window.print();return;}if(quick==='analytics-csv'){analyticsCsv();return;}if(quick==='setup-clock'){openClockSetup();return;}if(quick==='csv'){exportCsv();return;}if(quick==='clear-filters'){filterStart='';filterEnd='';filterQuery='';filterKind='all';render();return;} const m=e.target.closest('[data-mode]');if(m){mode=m.dataset.mode;notice='';render();return}const pg=e.target.closest('[data-page]');if(pg){page=pg.dataset.page;notice='';render();return}const shift=e.target.closest('[data-delete-shift]');if(shift&&confirm('Delete this shift?')){const {error}=await client.from('shifts').delete().eq('id',shift.dataset.deleteShift);if(error){notice=error.message;render()}else{notice='Shift deleted.';await load()}return}const ac=e.target.closest('[data-action]')?.dataset.action;if(ac==='signout'){notice='';await client.auth.signOut();}if(ac==='dismiss'){notice='';render()}});
+
+// Soft Minimal dashboard visuals. Original calculations and panels remain unchanged.
+const fiSoftBaseDashboard=dashboard;
+dashboard=function(){const markup=fiSoftBaseDashboard(),m=today().slice(0,7),month=shifts.filter(s=>s.date.startsWith(m)),all=breakdown(),gross=month.reduce((v,s)=>v+shiftPay(s,all).total,0),h=month.reduce((v,s)=>v+(Number(s.hours)||0),0);const hero=`<section class="fi-soft-hero fi-fade-in" aria-label="Monthly earnings overview"><div><div class="eyebrow">YOUR MONTH AT A GLANCE</div><h2>${fmt(gross)}</h2><p>Estimated gross earnings for ${new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'})}</p><span class="fi-hero-chip">✦ ${h.toFixed(2)} paid hours · ${month.length} logged shifts</span></div><div class="fi-hero-art" aria-hidden="true">✺</div></section>`;const index=markup.indexOf('<section class="statgrid"');return index<0?markup:markup.slice(0,index)+hero+markup.slice(index)};
+const fiSoftBaseTakeHome=takeHomePage;
+takeHomePage=function(){const markup=fiSoftBaseTakeHome(),p=fiCompute();const hero=`<section class="fi-soft-payhero fi-fade-in" aria-label="Estimated balance"><div><div class="eyebrow">YOUR PAYCHECK OUTLOOK</div><h2>${fmt(p.takeHome)}</h2><p>Partial take-home estimate · ${fiNice(p.win.start)} – ${fiNice(p.win.end)}</p></div><span class="fi-soft-payicon" aria-hidden="true">◈</span></section>`;const ix=markup.indexOf('<div class="notice">');return ix<0?hero+markup:markup.slice(0,ix)+hero+markup.slice(ix)};
+
 start();</script><script>
 (()=>{
  const overlay=document.getElementById('database-setup-overlay');
@@ -749,5 +813,14 @@ dlg.append(section);
 const source=document.getElementById('ohio-edge-source').textContent;
 section.querySelector('#fi-edge-preview').textContent=source;
 section.querySelector('#fi-copy-edge').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(source);section.querySelector('#fi-copy-edge').textContent='Copied function code!'}catch{section.querySelector('#fi-copy-edge').textContent='Select and copy code below'}});
+})();
+</script><script id="fi-soft-theme-script">
+(()=>{
+ const STORE='fireice_soft_minimal_theme';
+ const apply=t=>{document.body.classList.toggle('fi-dark',t==='dark');document.querySelector('#fi-soft-toggle').textContent=t==='dark'?'☀ Light mode':'☾ Dark mode';document.querySelector('#fi-soft-toggle').setAttribute('aria-label','Switch to '+(t==='dark'?'light':'dark')+' appearance');};
+ const button=document.createElement('button');button.type='button';button.id='fi-soft-toggle';button.className='fi-theme-toggle';button.textContent='☾ Dark mode';button.setAttribute('aria-label','Switch appearance');document.body.appendChild(button);
+ let choice;try{choice=localStorage.getItem(STORE)}catch{}
+ apply(choice==='light'||choice==='dark'?choice:(window.matchMedia?.('(prefers-color-scheme: dark)').matches?'dark':'light'));
+ button.addEventListener('click',()=>{const t=document.body.classList.contains('fi-dark')?'light':'dark';apply(t);try{localStorage.setItem(STORE,t)}catch{}});
 })();
 </script></body></html>
